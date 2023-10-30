@@ -1,7 +1,7 @@
 typedef struct {
     int rows;
     int columns;
-    double values;
+    double** values;
  } Matrix;
 
 Matrix* create_matrix(int rows, int columns);
