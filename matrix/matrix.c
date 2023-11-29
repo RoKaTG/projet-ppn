@@ -19,4 +19,17 @@ Matrix* create_matrix(int rows, int columns) {
     return matrix;
 }
 
+void print_matrix(Matrix *matrix) {
+    if (matrix == NULL) {
+        printf("Matrix is NULL\n");
+        return;
+    }
 
+    printf("This is the content of this %d x %d matrix:\n", matrix->row, matrix->column);
+    for (int i = 0; i < matrix->row; i++) {
+        for (int j = 0; j < matrix->column; j++) {
+            printf("%lf \t", matrix->value[i][j]);
+        }
+        printf("\n");
+    }
+}
