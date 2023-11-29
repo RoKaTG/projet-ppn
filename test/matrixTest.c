@@ -74,9 +74,26 @@ static void test_create_matrix(void **state) {
 
 /******************************************/
 
+static void test_free_matrix(void **state) {
+    Matrix *m = create_matrix(10, 10);
+    double vals[100];
+    for (int i = 0; i < 100; i++) {
+        vals[i] = i;
+    }
+
+    fill_matrix(m, vals, 100);
+
+    free_matrix(&m);
+
+    assert_null(m);
+}
+
+/******************************************/    
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_create_matrix),
+        cmocka_unit_test(test_free_matrix),
     };
     
     return cmocka_run_group_tests(tests, NULL, NULL);
