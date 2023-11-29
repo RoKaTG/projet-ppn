@@ -21,16 +21,14 @@ Matrix* create_matrix(int rows, int columns) {
 
 Matrix* copy_matrix(Matrix *original) {
     if (original == NULL) {
-        return NULL;  // Retourne NULL si la matrice originale est NULL
+        return NULL; 
     }
 
-    // Créer une nouvelle matrice avec les mêmes dimensions que l'originale
     Matrix* new_matrix = create_matrix(original->row, original->column);
     if (new_matrix == NULL) {
-        return NULL;  // Retourne NULL si l'allocation de mémoire échoue
+        return NULL; 
     }
 
-    // Copier les valeurs de l'originale dans la nouvelle matrice
     for (int i = 0; i < original->row; i++) {
         for (int j = 0; j < original->column; j++) {
             new_matrix->value[i][j] = original->value[i][j];
@@ -39,3 +37,27 @@ Matrix* copy_matrix(Matrix *original) {
 
     return new_matrix;
 }
+
+int save_matrix(Matrix *matrix, const char *filename) {
+    if (matrix == NULL || filename == NULL) {
+        return -1;
+    }
+
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        return -1; 
+    }
+
+    fprintf(file, "%d %d\n", matrix->row, matrix->column);
+
+    for (int i = 0; i < matrix->row; i++) {
+        for (int j = 0; j < matrix->column; j++) {
+            fprintf(file, "%lf ", matrix->value[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+    return 0;
+}
+
