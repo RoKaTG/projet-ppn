@@ -64,3 +64,15 @@ double gaussian_random(double mean, double std_dev) {
     double c = sqrt(-2 * log(r) / r);
     return mean + u * c * std_dev;
 }
+
+void randomize_matrix(Matrix* m, double mean, double std_dev) {
+    if (m == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < m->row; i++) {
+        for (int j = 0; j < m->column; j++) {
+            m->value[i][j] = gaussian_random(mean, std_dev);
+        }
+    }
+}
