@@ -90,10 +90,36 @@ static void test_free_matrix(void **state) {
 
 /******************************************/    
 
+static void test_randomize_matrix(void **state) {
+    Matrix *m = create_matrix(2, 2);
+    assert_non_null(m);
+
+    double zero_vals[] = {0.0, 0.0, 0.0, 0.0};
+    fill_matrix(m, zero_vals, 4);
+
+    randomize_matrix(m, 0.0, 1.0);
+
+    bool changed = false;
+    for (int i = 0; i < m->row; i++) {
+        for (int j = 0; j < m->column; j++) {
+            if (m->value[i][j] != 0.0) {
+                changed = true;
+                break;
+            }
+        }
+    }
+    assert_true(changed);
+
+    free_matrix(&m);
+}
+
+/******************************************/
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_create_matrix),
         cmocka_unit_test(test_free_matrix),
+        cmocka_unit_test(test_randomize_matrix),
     };
     
     return cmocka_run_group_tests(tests, NULL, NULL);
