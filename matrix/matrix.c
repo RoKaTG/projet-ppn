@@ -33,3 +33,26 @@ void print_matrix(Matrix *matrix) {
         printf("\n");
     }
 }
+
+Size check_dimensions(Matrix *matrix) {
+    Size size;
+
+    if (matrix == NULL) {
+        size.rows = 0;
+        size.columns = 0;
+        size.type = MATRIX_TYPE;  // ou un autre type pour indiquer une erreur
+        return size;
+    }
+
+    size.rows = matrix->row;
+    size.columns = matrix->column;
+
+    // Déterminer si c'est un vecteur (une seule colonne)
+    if (matrix->column == 1) {
+        size.type = VECTOR_TYPE;
+    } else {
+        size.type = MATRIX_TYPE;
+    }
+
+    return size;
+}
