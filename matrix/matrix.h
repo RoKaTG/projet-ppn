@@ -8,5 +8,6 @@ typedef struct {
 } Matrix;
 
 Matrix* create_matrix(int r, int c);
+void free_matrix(Matrix** matrix);
 
 #endif /* MATRIX_H */
