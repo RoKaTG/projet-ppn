@@ -78,10 +78,33 @@ static void test_save_matrix(void **state) {
 
 /******************************************/
 
+static void test_load_matrix(void **state) {
+    Matrix *original = create_matrix(2, 2);
+    double vals[] = {1.0, 2.0, 3.0, 4.0};
+    fill_matrix(original, vals, sizeof(vals) / sizeof(vals[0]));
+
+    save_matrix(original, "test_matrix_load.txt");
+
+    Matrix *loaded = load_matrix("test_matrix_load.txt");
+
+    for (int i = 0; i < original->row; i++) {
+        for (int j = 0; j < original->column; j++) {
+            assert_float_equal(loaded->value[i][j], vals[i * original->column + j], 0.0001);
+        }
+    }
+
+    free_matrix(&original);
+    free_matrix(&loaded);
+    remove("test_matrix_load.txt");
+}
+
+/******************************************/
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_copy_matrix),
         cmocka_unit_test(test_save_matrix),
+        cmocka_unit_test(test_load_matrix),
     };
     
     return cmocka_run_group_tests(tests, NULL, NULL);
