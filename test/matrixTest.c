@@ -109,6 +109,57 @@ static void test_fill_matrix(void **state) {
     free(m);
 }
 
+
+/******************************************/    
+
+static void test_print_matrix(void **state) {
+    Matrix *m = create_matrix(2, 2);
+    double vals[] = {1.0, 2.0, 3.0, 4.0};
+    fill_matrix(m, vals, 4);
+
+    FILE *temp_file = freopen("temp_output.txt", "w+", stdout);
+    if (temp_file == NULL) {
+        fail_msg("Failed to redirect stdout to a temp file.");
+        return;
+    }
+
+    print_matrix(m);
+
+    fflush(stdout);
+    fclose(temp_file); 
+
+    FILE *read_file = fopen("temp_output.txt", "r");
+    if (read_file == NULL) {
+        fail_msg("Failed to open the temporary file for reading.");
+        return;
+    }
+
+    char buffer[1024] = {0};
+    char expected_output[1024];
+    sprintf(expected_output, 
+            "This is the content of this 2 x 2 matrix:\n%lf \t%lf \t\n%lf \t%lf \t\n", 
+            vals[0], vals[1], vals[2], vals[3]);
+
+    size_t num_read = fread(buffer, sizeof(char), 1024, read_file);
+    if (num_read == 0 && !feof(read_file)) {
+        fail_msg("Failed to read from the temporary file.");
+        fclose(read_file);
+        return;
+    }
+
+    assert_string_equal(buffer, expected_output);
+
+    fclose(read_file);
+    remove("temp_output.txt");
+
+    for (int i = 0; i < m->row; i++) {
+        free(m->value[i]);
+    }
+    free(m->value);
+    free(m);
+}
+
+
 /******************************************/    
 
 static void test_free_matrix(void **state) {
@@ -123,6 +174,45 @@ static void test_free_matrix(void **state) {
     free_matrix(&m);
 
     assert_null(m);
+}
+
+/******************************************/    
+
+static void test_check_dimensions(void **state) {
+    Matrix *m1 = create_matrix(3, 3);
+    Size size1 = check_dimensions(m1);
+    assert_int_equal(size1.rows, 3);
+    assert_int_equal(size1.columns, 3);
+    assert_int_equal(size1.type, MATRIX_TYPE);
+
+    Matrix *m2 = create_matrix(3, 1);
+    Size size2 = check_dimensions(m2);
+    assert_int_equal(size2.rows, 3);
+    assert_int_equal(size2.columns, 1);
+    assert_int_equal(size2.type, VECTOR_TYPE);
+
+    Matrix *m3 = create_matrix(2, 4);
+    Size size3 = check_dimensions(m3);
+    assert_int_equal(size3.rows, 2);
+    assert_int_equal(size3.columns, 4);
+    assert_int_equal(size3.type, MATRIX_TYPE);
+
+    Matrix *m4 = create_matrix(1, 5);
+    Size size4 = check_dimensions(m4);
+    assert_int_equal(size4.rows, 1);
+    assert_int_equal(size4.columns, 5);
+    assert_int_equal(size4.type, MATRIX_TYPE);
+
+    Matrix *m5 = NULL;
+    Size size5 = check_dimensions(m5);
+    assert_int_equal(size5.rows, 0);
+    assert_int_equal(size5.columns, 0);
+    assert_int_equal(size5.type, MATRIX_TYPE);
+
+    free_matrix(&m1);
+    free_matrix(&m2);
+    free_matrix(&m3);
+    free_matrix(&m4);
 }
 
 /******************************************/    
@@ -151,7 +241,8 @@ static void test_copy_matrix(void **state) {
     assert_null(empty); 
 
     Matrix *empty_copy = copy_matrix(empty);
-    assert_null(empty_copy); 
+    assert_null(empty_copy);
+
 
     free_matrix(&original);
     free_matrix(&copy);
@@ -189,9 +280,9 @@ static void test_save_matrix(void **state) {
     }
 
     fclose(file);
-  
+
     free_matrix(&m);
-    remove("test_matrix.txt");  
+    remove("test_matrix.txt"); 
 }
 
 /******************************************/    
@@ -214,11 +305,6 @@ static void test_load_matrix(void **state) {
     free_matrix(&original);
     free_matrix(&loaded);
     remove("test_matrix_load.txt");
-}
-
-/******************************************/    
-
-void test_randomize_matrix(void **state) {
 }
 
 /******************************************/    
@@ -252,7 +338,9 @@ int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_create_matrix),
         cmocka_unit_test(test_fill_matrix),
+        cmocka_unit_test(test_print_matrix),
         cmocka_unit_test(test_free_matrix),
+        cmocka_unit_test(test_check_dimensions),
         cmocka_unit_test(test_copy_matrix),
         cmocka_unit_test(test_save_matrix),
         cmocka_unit_test(test_load_matrix),
