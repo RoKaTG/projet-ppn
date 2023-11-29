@@ -38,6 +38,24 @@ Matrix* create_matrix(int r, int c) {
     return matrix;
 }
 
+int fill_matrix(Matrix *matrix, double values[], int values_size) {
+    if (matrix == NULL || values == NULL) {
+        return -1;
+    }
+
+    int needed_size = matrix->row * matrix->column;
+    if (values_size < needed_size) {
+        return -1;
+    }
+
+    for (int i = 0; i < matrix->row; i++) {
+        for (int j = 0; j < matrix->column; j++) {
+            matrix->value[i][j] = values[i * matrix->column + j];
+        }
+    }
+    return 0;
+}
+
 Matrix* copy_matrix(Matrix *original) {
     if (original == NULL) {
         return NULL; 
