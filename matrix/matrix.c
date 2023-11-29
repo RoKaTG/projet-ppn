@@ -61,3 +61,38 @@ int save_matrix(Matrix *matrix, const char *filename) {
     return 0;
 }
 
+Matrix* load_matrix(const char *filename) {
+    if (filename == NULL) {
+        return NULL;
+    }
+
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        return NULL;
+    }
+
+    int rows, columns;
+    if (fscanf(file, "%d %d\n", &rows, &columns) != 2) {
+        fclose(file);
+        return NULL;
+    }
+
+    Matrix *matrix = create_matrix(rows, columns);
+    if (matrix == NULL) {
+        fclose(file);
+        return NULL;
+    }
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
+            if (fscanf(file, "%lf", &matrix->value[i][j]) != 1) {
+                fclose(file);
+                free_matrix(&matrix);
+                return NULL;
+            }
+        }
+    }
+
+    fclose(file);
+    return matrix;
+}
