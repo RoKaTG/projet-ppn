@@ -9,5 +9,6 @@ typedef struct {
 
 Matrix* copy_matrix(Matrix *original);
 int save_matrix(Matrix *matrix, const char *filename);
+Matrix* load_matrix(const char *filename);
 
 #endif /* MATRIX_H */
