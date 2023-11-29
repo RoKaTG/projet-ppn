@@ -9,7 +9,7 @@
 
 
 //#include "../matrix/matrix.c"
-#include "matrix.h"
+#include "../matrix/matrix.h"
 
 static void test_create_matrix(void **state) {
     Matrix *m = create_matrix(10, 10);

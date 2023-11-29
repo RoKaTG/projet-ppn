@@ -7,16 +7,16 @@ typedef struct {
     double** value;
 } Matrix;
 
+typedef enum {
+    MATRIX_TYPE,
+    VECTOR_TYPE
+} MatrixType;
+
 typedef struct {
     int rows;
     int columns;
     MatrixType type;
 } Size;
-
-typedef enum {
-    MATRIX_TYPE,
-    VECTOR_TYPE
-} MatrixType;
 
 
 Matrix* create_matrix(int r, int c);
