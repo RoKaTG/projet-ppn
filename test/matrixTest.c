@@ -41,9 +41,47 @@ static void test_copy_matrix(void **state) {
 
 /******************************************/
 
+static void test_save_matrix(void **state) {
+    Matrix *m = create_matrix(2, 2);
+    double vals[] = {1.0, 4.0, 3.0, 4.0};
+    fill_matrix(m, vals, sizeof(vals) / sizeof(vals[0]));
+
+    assert_int_equal(save_matrix(m, "test_matrix.txt"), 0);
+
+    FILE *file = fopen("test_matrix.txt", "r");
+    assert_non_null(file);
+
+    int rows, columns;
+    if (fscanf(file, "%d %d\n", &rows, &columns) != 2) {
+        fclose(file);
+        fail_msg("Failed to read matrix dimensions from file.");
+    }
+    assert_int_equal(rows, 2);
+    assert_int_equal(columns, 2);
+
+    double value;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < columns; j++) {
+            if (fscanf(file, "%lf", &value) != 1) {
+                fclose(file);
+                fail_msg("Failed to read matrix values from file.");
+            }
+            assert_float_equal(value, m->value[i][j], 0.0001);
+        }
+    }
+
+    fclose(file);
+
+    free_matrix(&m);
+    remove("test_matrix.txt"); 
+}
+
+/******************************************/
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_copy_matrix),
+        cmocka_unit_test(test_save_matrix),
     };
     
     return cmocka_run_group_tests(tests, NULL, NULL);
