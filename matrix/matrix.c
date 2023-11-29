@@ -51,3 +51,16 @@ void free_matrix(Matrix** matrix) {
 
     *matrix = NULL; 
 }
+
+double gaussian_random(double mean, double std_dev) {
+    double u = ((double) rand() / (RAND_MAX)) * 2 - 1;
+    double v = ((double) rand() / (RAND_MAX)) * 2 - 1;
+    double r = u * u + v * v;
+
+    if (r == 0 || r > 1) {
+        return gaussian_random(mean, std_dev);
+    }
+
+    double c = sqrt(-2 * log(r) / r);
+    return mean + u * c * std_dev;
+}
