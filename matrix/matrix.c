@@ -37,3 +37,17 @@ Matrix* create_matrix(int r, int c) {
 
     return matrix;
 }
+
+void free_matrix(Matrix** matrix) {
+    if (*matrix == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < (*matrix)->row; i++) {
+        free((*matrix)->value[i]);
+    }
+    free((*matrix)->value);
+    free(*matrix);
+
+    *matrix = NULL; 
+}
