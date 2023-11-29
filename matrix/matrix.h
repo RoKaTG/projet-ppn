@@ -7,6 +7,9 @@ typedef struct {
     double** value;
 } Matrix;
 
+Matrix* copy_matrix(Matrix *original);
+int save_matrix(Matrix *matrix, const char *filename);
+Matrix* load_matrix(const char *filename);
 Matrix* create_matrix(int r, int c);
 void free_matrix(Matrix** matrix);
 double gaussian_random(double mean, double std_dev);
