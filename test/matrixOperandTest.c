@@ -77,8 +77,10 @@ static void test_sub_matrix(void **state) {
 
 static void test_scale_matrix(void **state) {
     Matrix *m = create_matrix(2, 2);
+    assert_non_null(m); 
     double vals[] = {1.0, 2.0, 3.0, 4.0};
-    fill_matrix(m, vals, 4);
+    int fill_status = fill_matrix(m, vals, 4);
+    assert_int_equal(fill_status, 0); 
 
     scale_matrix(m, 2.0);
     for (int i = 0; i < 2; i++) {
@@ -95,6 +97,7 @@ static void test_scale_matrix(void **state) {
     }
 
     fill_matrix(m, vals, 4);
+
     scale_matrix(m, -1.0);
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 2; j++) {
@@ -103,9 +106,9 @@ static void test_scale_matrix(void **state) {
     }
 
     Matrix *empty = create_matrix(0, 0);
+    assert_null(empty); 
     scale_matrix(empty, 2.0);
-    assert_null(empty->value);
-
+    
     scale_matrix(NULL, 2.0); 
 
     free_matrix(&m);
