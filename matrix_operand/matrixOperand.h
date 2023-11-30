@@ -3,5 +3,6 @@
 
 #include "../matrix/matrix.h"
 
+Matrix* add_matrix(Matrix* matrix1, Matrix* matrix2);
 
 #endif //MATRIXOPERAND_H
