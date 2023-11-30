@@ -13,3 +13,9 @@ void scale_matrix(Matrix* matrix, double scalar) {
         }
     }
 }
+
+Matrix* inverse_matrix(Matrix* matrix) {
+    return NULL;
+}
+
+
