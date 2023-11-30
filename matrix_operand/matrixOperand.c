@@ -5,7 +5,7 @@
 #include "matrixOperand.h"
 
 void scale_matrix(Matrix* matrix, double scalar) {
-    if (matrix == NULL) return;
+    if (matrix == NULL || matrix->value == NULL) return;
 
     for (int i = 0; i < matrix->row; i++) {
         for (int j = 0; j < matrix->column; j++) {
