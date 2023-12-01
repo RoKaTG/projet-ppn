@@ -58,6 +58,28 @@ Matrix* sub_matrix(Matrix* matrix1, Matrix* matrix2) {
     return result;
 }
 
+Matrix* dotprod(Matrix *matrix, Matrix *vector) {
+    if (matrix == NULL || vector == NULL || vector->column != 1 || matrix->column != vector->row) {
+        return NULL; 
+    }
+
+    int result_matrix_rows = matrix->row;
+
+    Matrix *result_vector = create_matrix(result_matrix_rows, 1);
+    if (result_vector == NULL) {
+        return NULL; 
+    }
+
+    for (int i = 0; i < result_matrix_rows; i++) {
+        result_vector->value[i][0] = 0;
+        for (int k = 0; k < matrix->column; k++) {
+            result_vector->value[i][0] += matrix->value[i][k] * vector->value[k][0];
+        }
+    }
+
+    return result_vector;
+}
+
 bool compare_matrix(Matrix* matrix1, Matrix* matrix2) {
     if (matrix1 == NULL || matrix2 == NULL) {
         printf("L'une des matrices est NULL.\n");
