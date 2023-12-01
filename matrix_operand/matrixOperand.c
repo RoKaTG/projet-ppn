@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "matrixOperand.h"
 
@@ -57,3 +58,17 @@ Matrix* sub_matrix(Matrix* matrix1, Matrix* matrix2) {
     return result;
 }
 
+bool compare_matrix(Matrix* matrix1, Matrix* matrix2) {
+    if (matrix1 == NULL || matrix2 == NULL) {
+        printf("L'une des matrices est NULL.\n");
+        return false;
+    }
+
+    if (matrix1->row == matrix2->row && matrix1->column == matrix2->column) {
+        printf("Les matrices sont de mêmes dimensions.\n");
+        return true;
+    } else {
+        printf("Les matrices ne sont pas de mêmes dimensions.\n");
+        return false;
+    }
+}
