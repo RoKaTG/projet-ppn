@@ -117,11 +117,37 @@ static void test_scale_matrix(void **state) {
 
 /******************************************/    
 
+static void test_compare_matrix(void **state) {
+    Matrix *m1 = create_matrix(3, 3);
+    Matrix *m2 = create_matrix(3, 3);
+    Matrix *m3 = create_matrix(2, 3);
+    Matrix *m4 = NULL;
+
+    bool same = compare_matrix(m1, m2);
+    assert_true(same);
+
+    same = compare_matrix(m1, m3);
+    assert_false(same);
+
+    same = compare_matrix(m1, m4);
+    assert_false(same);
+
+    same = compare_matrix(m4, m4);
+    assert_false(same);
+
+    free_matrix(&m1);
+    free_matrix(&m2);
+    free_matrix(&m3);
+}
+
+/******************************************/
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_add_matrix),
         cmocka_unit_test(test_sub_matrix),
         cmocka_unit_test(test_scale_matrix),
+        cmocka_unit_test(test_compare_matrix),
     };
     
     return cmocka_run_group_tests(tests, NULL, NULL);
