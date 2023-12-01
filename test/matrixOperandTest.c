@@ -117,11 +117,82 @@ static void test_scale_matrix(void **state) {
 
 /******************************************/    
 
+static void test_dotprod(void **state) {
+    Matrix *m = create_matrix(3, 3);
+    double vals_m[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    fill_matrix(m, vals_m, 9);
+
+    Matrix *v = create_matrix(3, 1);
+    double vals_v[] = {1, 2, 3};
+    fill_matrix(v, vals_v, 3);
+
+    Matrix *result = dotprod(m, v);
+    assert_non_null(result);
+    assert_int_equal(result->row, 3);
+    assert_int_equal(result->column, 1);
+    assert_float_equal(result->value[0][0], 14, 0.0001);
+    assert_float_equal(result->value[1][0], 32, 0.0001);
+    assert_float_equal(result->value[2][0], 50, 0.0001);
+    free_matrix(&result);
+
+    Matrix *m_incompatible = create_matrix(2, 3);
+    Matrix *v_incompatible = create_matrix(4, 1);
+    result = dotprod(m_incompatible, v_incompatible);
+    assert_null(result);
+    free_matrix(&m_incompatible);
+    free_matrix(&v_incompatible);
+
+    Matrix *v_empty = create_matrix(0, 0);
+    result = dotprod(m, v_empty);
+    assert_null(result);
+    free_matrix(&v_empty);
+
+    result = dotprod(m, NULL);
+    assert_null(result);
+
+    Matrix *v_1xN = create_matrix(1, 3);
+    result = dotprod(m, v_1xN);
+    assert_null(result);
+    free_matrix(&v_1xN);
+
+    free_matrix(&m);
+    free_matrix(&v);
+}
+
+/******************************************/
+
+static void test_compare_matrix(void **state) {
+    Matrix *m1 = create_matrix(3, 3);
+    Matrix *m2 = create_matrix(3, 3);
+    Matrix *m3 = create_matrix(2, 3);
+    Matrix *m4 = NULL;
+
+    bool same = compare_matrix(m1, m2);
+    assert_true(same);
+
+    same = compare_matrix(m1, m3);
+    assert_false(same);
+
+    same = compare_matrix(m1, m4);
+    assert_false(same);
+
+    same = compare_matrix(m4, m4);
+    assert_false(same);
+
+    free_matrix(&m1);
+    free_matrix(&m2);
+    free_matrix(&m3);
+}
+
+/******************************************/
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_add_matrix),
         cmocka_unit_test(test_sub_matrix),
         cmocka_unit_test(test_scale_matrix),
+        cmocka_unit_test(test_dotprod),
+        cmocka_unit_test(test_compare_matrix),
     };
     
     return cmocka_run_group_tests(tests, NULL, NULL);
