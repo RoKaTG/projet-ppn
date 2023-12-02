@@ -186,6 +186,69 @@ static void test_compare_matrix(void **state) {
 
 /******************************************/
 
+static void test_dgemm(void **state) {
+    Matrix *m1 = create_matrix(2, 3);
+    Matrix *m2 = create_matrix(3, 2);
+    double vals_m1[] = {1, 2, 3, 4, 5, 6};
+    double vals_m2[] = {7, 8, 9, 10, 11, 12};
+    fill_matrix(m1, vals_m1, 6);
+    fill_matrix(m2, vals_m2, 6);
+
+    Matrix *result = dgemm(m1, m2);
+    assert_non_null(result);
+    assert_int_equal(result->row, 2);
+    assert_int_equal(result->column, 2);
+
+    assert_float_equal(result->value[0][0], 58, 0.0001);
+    assert_float_equal(result->value[0][1], 64, 0.0001);
+    assert_float_equal(result->value[1][0], 139, 0.0001);
+    assert_float_equal(result->value[1][1], 154, 0.0001);
+    
+    Matrix *matrix1 = create_matrix(3, 3);
+    Matrix *vector = create_matrix(2, 1);
+    Matrix *result2 = dgemm(matrix1, vector);
+    assert_null(result2);
+    free_matrix(&matrix1);
+    free_matrix(&vector);
+
+    matrix1 = create_matrix(0, 0);
+    Matrix *matrix2 = create_matrix(0, 0);
+    Matrix *result3 = dgemm(matrix1, matrix2);
+    assert_null(result3);
+
+    free_matrix(&matrix1);
+    free_matrix(&matrix2);        
+    free_matrix(&m1);
+    free_matrix(&m2);
+    free_matrix(&result);
+    free_matrix(&result2);
+    free_matrix(&result3);
+}
+
+/******************************************/
+
+static void test_transpose_matrix(void **state) {
+    Matrix *matrix1 = create_matrix(2, 3);
+    double vals[] = {1, 2, 3, 4, 5, 6};
+    fill_matrix(matrix1, vals, 6);
+
+    Matrix *matrix2 = transpose_matrix(matrix1);
+    assert_non_null(matrix2);
+    assert_int_equal(matrix2->row, matrix1->column);
+    assert_int_equal(matrix2->column, matrix1->row);
+    assert_float_equal(matrix2->value[0][0], 1, 0.0001);
+    assert_float_equal(matrix2->value[1][0], 2, 0.0001);
+    assert_float_equal(matrix2->value[2][0], 3, 0.0001);
+
+    Matrix *result = transpose_matrix(NULL);
+    assert_null(result);
+
+    free_matrix(&matrix1);
+    free_matrix(&matrix2);
+}
+
+/******************************************/
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_add_matrix),
@@ -193,6 +256,8 @@ int main(void) {
         cmocka_unit_test(test_scale_matrix),
         cmocka_unit_test(test_dotprod),
         cmocka_unit_test(test_compare_matrix),
+        cmocka_unit_test(test_dgemm),
+        cmocka_unit_test(test_transpose_matrix),
     };
     
     return cmocka_run_group_tests(tests, NULL, NULL);
