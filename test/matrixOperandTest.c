@@ -227,6 +227,26 @@ static void test_dgemm(void **state) {
 
 /******************************************/
 
+static void test_transpose_matrix(void **state) {
+    Matrix *matrix1 = create_matrix(2, 3);
+    double vals[] = {1, 2, 3, 4, 5, 6};
+    fill_matrix(matrix1, vals, 6);
+
+    Matrix *matrix2 = transpose_matrix(matrix1);
+    assert_non_null(matrix2);
+    assert_int_equal(matrix2->row, matrix1->column);
+    assert_int_equal(matrix2->column, matrix1->row);
+    assert_float_equal(matrix2->value[0][0], 1, 0.0001);
+    assert_float_equal(matrix2->value[1][0], 2, 0.0001);
+    assert_float_equal(matrix2->value[2][0], 3, 0.0001);
+
+    Matrix *result = transpose_matrix(NULL);
+    assert_null(result);
+
+    free_matrix(&matrix1);
+    free_matrix(&matrix2);
+}
+
 /******************************************/
 
 int main(void) {
@@ -237,6 +257,7 @@ int main(void) {
         cmocka_unit_test(test_dotprod),
         cmocka_unit_test(test_compare_matrix),
         cmocka_unit_test(test_dgemm),
+        cmocka_unit_test(test_transpose_matrix),
     };
     
     return cmocka_run_group_tests(tests, NULL, NULL);
