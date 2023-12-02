@@ -117,3 +117,22 @@ Matrix* dgemm(Matrix* matrix1, Matrix* matrix2) {
 
     return matrix3;
 }
+
+Matrix* transpose_matrix(Matrix* matrix1){
+    if (matrix1 == NULL) {
+        return NULL;
+    }
+
+    Matrix* matrix2 = create_matrix(matrix1->column, matrix1->row);
+    if (matrix2 == NULL) {
+        return NULL;
+    }
+
+    for (int i = 0; i < matrix1->row; ++i) {
+        for (int j = 0; j < matrix1->column; ++j) {
+            matrix2->value[j][i] = matrix1->value[i][j];
+        }
+    }
+
+    return matrix2;
+}
