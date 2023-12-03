@@ -5,5 +5,6 @@
 #include "../matrixOperand/matrixOperand.h"
 
 double sigmoid(double x);
+void apply_function(Matrix* m, double (*func)(double));
 
 #endif // NEURAL_NETWORK_H
