@@ -42,5 +42,18 @@ int main() {
     const int epochs = 1000;
     const int number_of_images = 10;
 
+    // Création et initialisation des couches et poids du MLP
+    Matrix* input_layer = create_matrix(input_size, 1);
+    Matrix* hidden_layer_weights = create_matrix(hidden_size, input_size);
+    Matrix* hidden_layer_biases = create_matrix(hidden_size, 1);
+    Matrix* output_layer_weights = create_matrix(output_size, hidden_size);
+    Matrix* output_layer_biases = create_matrix(output_size, 1);
+    Matrix* expected_output = create_matrix(output_size, 1);
+
+    matrix_randomize(hidden_layer_weights, 0.0, 1.0);
+    matrix_randomize(hidden_layer_biases, 0.0, 1.0);
+    matrix_randomize(output_layer_weights, 0.0, 1.0);
+    matrix_randomize(output_layer_biases, 0.0, 1.0);
+
     return 0;
 }
