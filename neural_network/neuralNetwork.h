@@ -1,8 +1,7 @@
 #ifndef NEURAL_NETWORK_H
 #define NEURAL_NETWORK_H
 
-#include <stdint.h>
-#include "../matrixOperand/matrixOperand.h"
+#include "../matrix/matrix.h"
 
 double sigmoid(double x);
 void apply_function(Matrix* m, double (*func)(double));
