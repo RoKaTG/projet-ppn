@@ -42,7 +42,6 @@ int main() {
     const int epochs = 1000;
     const int number_of_images = 10;
 
-    // Création et initialisation des couches et poids du MLP
     Matrix* input_layer = create_matrix(input_size, 1);
     Matrix* hidden_layer_weights = create_matrix(hidden_size, input_size);
     Matrix* hidden_layer_biases = create_matrix(hidden_size, 1);
@@ -54,6 +53,11 @@ int main() {
     matrix_randomize(hidden_layer_biases, 0.0, 1.0);
     matrix_randomize(output_layer_weights, 0.0, 1.0);
     matrix_randomize(output_layer_biases, 0.0, 1.0);
+
+    FILE* imageFile = fopen("../mnist/train-images-idx3-ubyte", "rb");
+    FILE* labelFile = fopen("../mnist/train-labels-idx1-ubyte", "rb");
+    uint8_t* images = readMnistImages(imageFile, 0, number_of_images);
+    uint8_t* labels = readMnistLabels(labelFile, 0, number_of_images);
 
     return 0;
 }
