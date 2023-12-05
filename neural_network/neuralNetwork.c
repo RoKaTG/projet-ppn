@@ -59,5 +59,17 @@ int main() {
     uint8_t* images = readMnistImages(imageFile, 0, number_of_images);
     uint8_t* labels = readMnistLabels(labelFile, 0, number_of_images);
 
+    for (int epoch = 0; epoch < epochs; epoch++) {
+        for (int i = 0; i < number_of_images; i++) {
+            for (int j = 0; j < input_size; j++) {
+                input_layer->value[j][0] = images[i * input_size + j] / 255.0;
+            }
+
+            for (int j = 0; j < output_size; j++) {
+                expected_output->value[j][0] = (labels[i] == j) ? 1.0 : 0.0;
+            }
+        }
+    }
+
     return 0;
 }
