@@ -20,6 +20,17 @@ void apply_function(Matrix* m, double (*func)(double)) {
     }
 }
 
+void softmax(Matrix* m) {
+    double sum = 0.0;
+    for (int i = 0; i < m->row; i++) {
+        m->value[i][0] = exp(m->value[i][0]);
+        sum += m->value[i][0];
+    }
+    for (int i = 0; i < m->row; i++) {
+        m->value[i][0] /= sum;
+    }
+}
+
 void backpropagate(Matrix* input, Matrix* output, Matrix* expected, Matrix* weights, Matrix* biases, double learning_rate) {
     double error = expected->value[0][0] - output->value[0][0];
     double derivative = output->value[0][0] * (1 - output->value[0][0]);
@@ -76,8 +87,8 @@ int main() {
 
             Matrix* output_layer_input = dgemm(output_layer_weights, hidden_layer_input);
             add_matrix(output_layer_input, output_layer_biases);
-            apply_function(output_layer_input, sigmoid);
-
+            softmax(output_layer_input);
+            
             backpropagate(hidden_layer_input, output_layer_input, expected_output, output_layer_weights, output_layer_biases, learning_rate);
             
             if (epoch % 100 == 0) {
