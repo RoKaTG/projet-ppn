@@ -31,3 +31,16 @@ void backpropagate(Matrix* input, Matrix* output, Matrix* expected, Matrix* weig
         biases->value[i][0] += learning_rate * gradient;
     }
 }
+
+int main() {
+    srand((unsigned int)time(NULL));
+
+    const int input_size = 784;
+    const int hidden_size = 128;
+    const int output_size = 10;
+    const double learning_rate = 0.01;
+    const int epochs = 1000;
+    const int number_of_images = 10;
+
+    return 0;
+}
