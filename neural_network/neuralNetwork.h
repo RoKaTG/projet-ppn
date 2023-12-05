@@ -6,5 +6,6 @@
 
 double sigmoid(double x);
 void apply_function(Matrix* m, double (*func)(double));
+void backpropagate(Matrix* input, Matrix* output, Matrix* expected, Matrix* weights, Matrix* biases, double learning_rate);
 
 #endif // NEURAL_NETWORK_H
