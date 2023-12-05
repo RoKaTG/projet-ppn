@@ -68,6 +68,16 @@ int main() {
             for (int j = 0; j < output_size; j++) {
                 expected_output->value[j][0] = (labels[i] == j) ? 1.0 : 0.0;
             }
+            
+            Matrix* hidden_layer_input = dgemm(hidden_layer_weights, input_layer);
+            add_matrix(hidden_layer_input, hidden_layer_biases);
+            apply_function(hidden_layer_input, sigmoid);
+
+            Matrix* output_layer_input = dgemm(output_layer_weights, hidden_layer_input);
+            add_matrix(output_layer_input, output_layer_biases);
+            apply_function(output_layer_input, sigmoid);
+
+            backpropagate(hidden_layer_input, output_layer_input, expected_output, output_layer_weights, output_layer_biases, learning_rate);
         }
     }
 
