@@ -3,9 +3,10 @@
 #include <math.h>
 #include <time.h>
 
-#include "../matrix/matrix.h"
-#include "../matrix_operand/matrixOperand.h"
+#include "neuralNetwork.h"
 #include "../mnist_reader/mnist_reader.h"
+#include "../matrix_operand/matrixOperand.h"
+
 
 double sigmoid(double x) {
     return 1.0 / (1.0 + exp(-x));
