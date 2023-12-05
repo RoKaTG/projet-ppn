@@ -78,8 +78,18 @@ int main() {
             apply_function(output_layer_input, sigmoid);
 
             backpropagate(hidden_layer_input, output_layer_input, expected_output, output_layer_weights, output_layer_biases, learning_rate);
+            
+            if (epoch % 100 == 0) {
+                printf("Epoch %d: Image %d, Label: %d, Output: [", epoch, i, labels[i]);
+                for (int j = 0; j < output_size; j++) {
+                    printf("%.2f ", output_layer_input->value[j][0]);
+                }
+                printf("]\n");
+            }
+
+            free_matrix(&hidden_layer_input);
+            free_matrix(&output_layer_input);
         }
     }
-
     return 0;
 }
