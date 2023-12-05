@@ -91,5 +91,18 @@ int main() {
             free_matrix(&output_layer_input);
         }
     }
+    
+    free(images);
+    free(labels);
+    fclose(imageFile);
+    fclose(labelFile);
+
+    free_matrix(&input_layer);
+    free_matrix(&hidden_layer_weights);
+    free_matrix(&hidden_layer_biases);
+    free_matrix(&output_layer_weights);
+    free_matrix(&output_layer_biases);
+    free_matrix(&expected_output);
+
     return 0;
 }
