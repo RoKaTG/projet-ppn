@@ -1,0 +1,118 @@
+gdb ./nn_exec 
+GNU gdb (Ubuntu 12.1-0ubuntu1~22.04) 12.1
+Copyright (C) 2022 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<https://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from ./nn_exec...
+(gdb) run
+Starting program: /home/yassine/Bureau/PPN/projet-ppn3/neural_network/nn_exec 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+Initializing layer 0: size 128 x 784
+Matrix created at address 0x55555555c700 with size 128 x 784
+Matrix created at address 0x555555621330 with size 128 x 1
+Initializing layer 1: size 10 x 128
+Matrix created at address 0x555555622760 with size 10 x 128
+Matrix created at address 0x555555625080 with size 10 x 1
+Initializing layer 2: size 10 x 10
+Matrix created at address 0x555555625240 with size 10 x 10
+Matrix created at address 0x555555625680 with size 10 x 1
+Matrix created at address 0x555555629af0 with size 784 x 1
+Matrix created at address 0x5555556315a0 with size 10 x 1
+Matrix created at address 0x555555631760 with size 784 x 1
+Layer 0: input address 0x555555631760
+Matrix created at address 0x555555639210 with size 128 x 1
+Matrix created at address 0x55555563a640 with size 128 x 1
+Applying function at address 0x555555639210
+Layer 1: input address 0x555555639210
+Matrix created at address 0x55555563ba70 with size 10 x 1
+Matrix created at address 0x55555563bc30 with size 10 x 1
+Applying function at address 0x55555563ba70
+Layer 2: input address 0x55555563ba70
+Matrix created at address 0x555555639700 with size 10 x 1
+Matrix created at address 0x55555563a5c0 with size 10 x 1
+Applying function at address 0x555555639700
+Calling softmax on matrix at address 0x7fffffffd7f0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Matrix created at address 0x55555563bb70 with size 784 x 1
+Matrix created at address 0x555555642ac0 with size 128 x 1
+Matrix created at address 0x555555643ae0 with size 128 x 1
+Applying function at address 0x555555642ac0
+Matrix created at address 0x555555644f10 with size 10 x 1
+Matrix created at address 0x555555645070 with size 10 x 1
+Applying function at address 0x555555644f10
+Matrix created at address 0x555555645230 with size 10 x 1
+Matrix created at address 0x5555556453f0 with size 10 x 1
+Applying function at address 0x555555645230
+Calling softmax on matrix at address 0x7fffffffd7f0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Calling softmax on matrix at address 0x7fffffffd7b0
+Matrix created at address 0x5555556455b0 with size 10 x 1
+Matrix created at address 0x555555645770 with size 10 x 1
+Matrix created at address 0x555555645930 with size 1 x 10
+Matrix created at address 0x5555556459d0 with size 10 x 10
+Matrix created at address 0x555555645e10 with size 10 x 10
+Matrix created at address 0x555555646250 with size 10 x 1
+Matrix created at address 0x555555646410 with size 10 x 10
+Matrix created at address 0x5555556456f0 with size 10 x 1
+Matrix created at address 0x555555645890 with size 10 x 1
+Matrix created at address 0x555555645910 with size 1 x 128
+Matrix created at address 0x555555645950 with size 10 x 128
+Matrix created at address 0x555555645930 with size 10 x 128
+Matrix created at address 0x555555645970 with size 10 x 1
+Matrix created at address 0x55555564b8b0 with size 128 x 10
+Matrix created at address 0x5555556455b0 with size 128 x 1
+Matrix created at address 0x555555646410 with size 128 x 1
+Matrix created at address 0x5555556489b0 with size 1 x 784
+Matrix created at address 0x555555646670 with size 128 x 784
+Matrix created at address 0x555555646690 with size 128 x 784
+Matrix created at address 0x5555556466b0 with size 128 x 1
+double free or corruption (out)
+
+Program received signal SIGABRT, Aborted.
+__pthread_kill_implementation (no_tid=0, signo=6, threadid=140737350547264) at ./nptl/pthread_kill.c:44
+44	./nptl/pthread_kill.c: Aucun fichier ou dossier de ce type.
+(gdb) bt
+#0  __pthread_kill_implementation (no_tid=0, signo=6, threadid=140737350547264) at ./nptl/pthread_kill.c:44
+#1  __pthread_kill_internal (signo=6, threadid=140737350547264) at ./nptl/pthread_kill.c:78
+#2  __GI___pthread_kill (threadid=140737350547264, signo=signo@entry=6) at ./nptl/pthread_kill.c:89
+#3  0x00007ffff7cd8476 in __GI_raise (sig=sig@entry=6) at ../sysdeps/posix/raise.c:26
+#4  0x00007ffff7cbe7f3 in __GI_abort () at ./stdlib/abort.c:79
+#5  0x00007ffff7d1f676 in __libc_message (action=action@entry=do_abort, fmt=fmt@entry=0x7ffff7e71b8c "%s\n") at ../sysdeps/posix/libc_fatal.c:155
+#6  0x00007ffff7d36cfc in malloc_printerr (str=str@entry=0x7ffff7e747b0 "double free or corruption (out)") at ./malloc/malloc.c:5664
+#7  0x00007ffff7d38e70 in _int_free (av=0x7ffff7eafc80 <main_arena>, p=0x55555563bba0, have_lock=<optimized out>) at ./malloc/malloc.c:4588
+#8  0x00007ffff7d3b453 in __GI___libc_free (mem=<optimized out>) at ./malloc/malloc.c:3391
+#9  0x00005555555560c1 in free_matrix (matrix=<optimized out>) at matrix/matrix.c:117
+#10 free_matrix (matrix=matrix@entry=0x55555563bb90) at matrix/matrix.c:111
+#11 0x00005555555559b7 in backpropagation (number_of_layers=3, learning_rate=0.01, expected_output=<optimized out>, input=<optimized out>, network=0x55555555c2a0)
+    at neural_network/neuralNetwork.c:278
+#12 main () at neural_network/neuralNetwork.c:320
+(gdb) 
+
+
