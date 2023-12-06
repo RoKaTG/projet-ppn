@@ -1,0 +1,106 @@
+valgrind --leak-check=full --track-origins=yes -- ./nn_exec 
+==5756== Memcheck, a memory error detector
+==5756== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==5756== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==5756== Command: ./nn_exec
+==5756== 
+Initializing layer 0: size 128 x 784
+Matrix created at address 0x4b82510 with size 128 x 784
+Matrix created at address 0x4c489a0 with size 128 x 1
+Initializing layer 1: size 10 x 128
+Matrix created at address 0x4c4b630 with size 10 x 128
+Matrix created at address 0x4c4e190 with size 10 x 1
+Initializing layer 2: size 10 x 10
+Matrix created at address 0x4c4e590 with size 10 x 10
+Matrix created at address 0x4c4ec10 with size 10 x 1
+Matrix created at address 0x4c53400 with size 784 x 1
+Matrix created at address 0x4c64210 with size 10 x 1
+Matrix created at address 0x4c64610 with size 784 x 1
+Layer 0: input address 0x4c64610
+Matrix created at address 0x4c75420 with size 128 x 1
+Matrix created at address 0x4c780b0 with size 128 x 1
+Applying function at address 0x4c75420
+Layer 1: input address 0x4c75420
+Matrix created at address 0x4c7ad40 with size 10 x 1
+Matrix created at address 0x4c7b140 with size 10 x 1
+Applying function at address 0x4c7ad40
+Layer 2: input address 0x4c7ad40
+Matrix created at address 0x4c7b540 with size 10 x 1
+Matrix created at address 0x4c7b940 with size 10 x 1
+Applying function at address 0x4c7b540
+Calling softmax on matrix at address 0x1ffefff790
+==5756== Invalid read of size 4
+==5756==    at 0x10AE52: softmax (neuralNetwork.c:67)
+==5756==    by 0x1096A7: apply_function (neuralNetwork.c:35)
+==5756==    by 0x1096A7: forward_propagation (neuralNetwork.c:207)
+==5756==    by 0x1096A7: main (neuralNetwork.c:319)
+==5756==  Address 0x1ffefff790 is on thread 1's stack
+==5756==  1312 bytes below stack pointer
+==5756== 
+==5756== Invalid read of size 8
+==5756==    at 0x10AE58: softmax (neuralNetwork.c:67)
+==5756==    by 0x1096A7: apply_function (neuralNetwork.c:35)
+==5756==    by 0x1096A7: forward_propagation (neuralNetwork.c:207)
+==5756==    by 0x1096A7: main (neuralNetwork.c:319)
+==5756==  Address 0x1ffefff798 is on thread 1's stack
+==5756==  1304 bytes below stack pointer
+==5756== 
+==5756== Invalid read of size 8
+==5756==    at 0x10AE7D: softmax (neuralNetwork.c:68)
+==5756==    by 0x1096A7: apply_function (neuralNetwork.c:35)
+==5756==    by 0x1096A7: forward_propagation (neuralNetwork.c:207)
+==5756==    by 0x1096A7: main (neuralNetwork.c:319)
+==5756==  Address 0xfbad2a84 is not stack'd, malloc'd or (recently) free'd
+==5756== 
+==5756== 
+==5756== Process terminating with default action of signal 11 (SIGSEGV)
+==5756==  Access not within mapped region at address 0xFBAD2A84
+==5756==    at 0x10AE7D: softmax (neuralNetwork.c:68)
+==5756==    by 0x1096A7: apply_function (neuralNetwork.c:35)
+==5756==    by 0x1096A7: forward_propagation (neuralNetwork.c:207)
+==5756==    by 0x1096A7: main (neuralNetwork.c:319)
+==5756==  If you believe this happened as a result of a stack
+==5756==  overflow in your program's main thread (unlikely but
+==5756==  possible), you can try to increase the size of the
+==5756==  main thread stack using the --main-stacksize= flag.
+==5756==  The main thread stack size used in this run was 8388608.
+==5756== 
+==5756== HEAP SUMMARY:
+==5756==     in use at exit: 863,650 bytes in 2,078 blocks
+==5756==   total heap usage: 2,208 allocs, 130 frees, 865,714 bytes allocated
+==5756== 
+==5756== 168 (16 direct, 152 indirect) bytes in 1 blocks are definitely lost in loss record 19 of 38
+==5756==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==5756==    by 0x109D64: create_matrix (matrix.c:12)
+==5756==    by 0x10AC7E: dgemm (matrixOperand.c:104)
+==5756==    by 0x10963E: forward_propagation (neuralNetwork.c:205)
+==5756==    by 0x10963E: main (neuralNetwork.c:319)
+==5756== 
+==5756== 2,416 (48 direct, 2,368 indirect) bytes in 3 blocks are definitely lost in loss record 29 of 38
+==5756==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==5756==    by 0x109D64: create_matrix (matrix.c:12)
+==5756==    by 0x10A83F: add_matrix (matrixOperand.c:28)
+==5756==    by 0x10964D: forward_propagation (neuralNetwork.c:206)
+==5756==    by 0x10964D: main (neuralNetwork.c:319)
+==5756== 
+==5756== 12,560 (16 direct, 12,544 indirect) bytes in 1 blocks are definitely lost in loss record 37 of 38
+==5756==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==5756==    by 0x109D64: create_matrix (matrix.c:12)
+==5756==    by 0x10A161: copy_matrix (matrix.c:152)
+==5756==    by 0x1095EE: forward_propagation (neuralNetwork.c:200)
+==5756==    by 0x1095EE: main (neuralNetwork.c:319)
+==5756== 
+==5756== LEAK SUMMARY:
+==5756==    definitely lost: 80 bytes in 5 blocks
+==5756==    indirectly lost: 15,064 bytes in 946 blocks
+==5756==      possibly lost: 0 bytes in 0 blocks
+==5756==    still reachable: 848,506 bytes in 1,127 blocks
+==5756==         suppressed: 0 bytes in 0 blocks
+==5756== Reachable blocks (those to which a pointer was found) are not shown.
+==5756== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==5756== 
+==5756== For lists of detected and suppressed errors, rerun with: -s
+==5756== ERROR SUMMARY: 6 errors from 6 contexts (suppressed: 0 from 0)
+Erreur de segmentation (core dumped)
+yassine@yassine-Aspire-E5-575G:~/Bureau/PPN/projet-ppn3/neural_network$ 
+
