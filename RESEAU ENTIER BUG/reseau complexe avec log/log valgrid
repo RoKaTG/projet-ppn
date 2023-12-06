@@ -1,0 +1,52 @@
+Use of uninitialised value of size 8
+==7453==    at 0x109656: apply_function (neuralNetwork.c:26)
+==7453==    by 0x109656: main (neuralNetwork.c:436)
+==7453==  Uninitialised value was created by a stack allocation
+==7453==    at 0x1092C0: main (neuralNetwork.c:379)
+==7453== 
+==7453== Jump to the invalid address stated on the next line
+==7453==    at 0x0: ???
+==7453==    by 0x109658: apply_function (neuralNetwork.c:26)
+==7453==    by 0x109658: main (neuralNetwork.c:436)
+==7453==  Address 0x0 is not stack'd, malloc'd or (recently) free'd
+==7453== 
+==7453== 
+==7453== Process terminating with default action of signal 11 (SIGSEGV)
+==7453==  Bad permissions for mapped region at address 0x0
+==7453==    at 0x0: ???
+==7453==    by 0x109658: apply_function (neuralNetwork.c:26)
+==7453==    by 0x109658: main (neuralNetwork.c:436)
+==7453== 
+==7453== HEAP SUMMARY:
+==7453==     in use at exit: 7,180,516 bytes in 7,124 blocks
+==7453==   total heap usage: 8,040 allocs, 916 frees, 7,195,140 bytes allocated
+==7453== 
+==7453== 14,800 (48 direct, 14,752 indirect) bytes in 3 blocks are definitely lost in loss record 35 of 40
+==7453==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7453==    by 0x109B03: create_matrix (matrix.c:12)
+==7453==    by 0x10A53F: add_matrix (matrixOperand.c:28)
+==7453==    by 0x10AE09: forward_propagate_layer.part.0 (neuralNetwork.c:141)
+==7453==    by 0x1094F1: forward_propagate_layer (neuralNetwork.c:131)
+==7453==    by 0x1094F1: forward_propagate (neuralNetwork.c:181)
+==7453==    by 0x1094F1: forward_propagate (neuralNetwork.c:176)
+==7453==    by 0x1094F1: main (neuralNetwork.c:421)
+==7453== 
+==7453== 633,488 (16 direct, 633,472 indirect) bytes in 1 blocks are definitely lost in loss record 39 of 40
+==7453==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==7453==    by 0x109B03: create_matrix (matrix.c:12)
+==7453==    by 0x10B858: prepare_input_data (neuralNetwork.c:328)
+==7453==    by 0x109437: main (neuralNetwork.c:408)
+==7453== 
+==7453== LEAK SUMMARY:
+==7453==    definitely lost: 64 bytes in 4 blocks
+==7453==    indirectly lost: 648,224 bytes in 1,710 blocks
+==7453==      possibly lost: 0 bytes in 0 blocks
+==7453==    still reachable: 6,532,228 bytes in 5,410 blocks
+==7453==         suppressed: 0 bytes in 0 blocks
+==7453== Reachable blocks (those to which a pointer was found) are not shown.
+==7453== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==7453== 
+==7453== For lists of detected and suppressed errors, rerun with: -s
+==7453== ERROR SUMMARY: 7 errors from 5 contexts (suppressed: 0 from 0)
+Erreur de segmentation (core dumped)
+

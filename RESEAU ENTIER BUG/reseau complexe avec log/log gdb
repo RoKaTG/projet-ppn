@@ -1,0 +1,7 @@
+Program received signal SIGSEGV, Segmentation fault.
+0x00007ffff7fc1066 in ?? ()
+(gdb) bt
+#0  0x00007ffff7fc1066 in ?? ()
+#1  0x0000555555555659 in apply_function (func=0x7ffff7fc1000, m=0x555555c5c720) at neural_network/neuralNetwork.c:26
+#2  main () at neural_network/neuralNetwork.c:436
+
