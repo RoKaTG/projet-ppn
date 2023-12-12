@@ -93,7 +93,7 @@ Layer* create_layer(int input_size, int output_size, double (*activation_func)(d
         return NULL;
     }
 
-    // Initialisation des poids et des biais
+    // Initialisation des poids et des biais de la couche avec des valeurs aléatoires
     layer->weights = create_matrix(output_size, input_size); //vecteur entrée * taille sortie couche
     layer->biases = create_matrix(output_size, 1);
 
@@ -120,7 +120,15 @@ Layer* create_layer(int input_size, int output_size, double (*activation_func)(d
     return layer;
 }
 
-// Fonction pour initialiser le réseau de neurones
+/**
+ * @brief Crée et initialise un réseau de neurones.
+ * @param sizes Tableau contenant les tailles des couches du réseau.
+ * @param number_of_layers Nombre total de couches dans le réseau.
+ * @param activation_functions Fonctions d'activation pour chaque couche.
+ * @param activation_derivatives Dérivées des fonctions d'activation.
+ * @param firstLayerSize Taille de la première couche (nombre de neurones d'entrée).
+ * @return Pointeur vers le réseau de neurones nouvellement créé.
+ */
 NeuralNetwork* create_neural_network(int* sizes, int number_of_layers, double (*activation_functions[])(double), double (*activation_derivatives[])(double), int firstLayerSize) {
     NeuralNetwork* network = (NeuralNetwork*)malloc(sizeof(NeuralNetwork));
     if (network == NULL) {
@@ -153,7 +161,10 @@ NeuralNetwork* create_neural_network(int* sizes, int number_of_layers, double (*
     return network;
 }
 
-// Fonction pour libérer une couche du réseau
+/**
+ * @brief Libère la mémoire allouée à une couche du réseau.
+ * @param layer Pointeur vers la couche à libérer.
+ */
 void free_layer(Layer* layer) {
     if (layer != NULL) {
         free_matrix(&(layer->weights));
@@ -164,7 +175,10 @@ void free_layer(Layer* layer) {
     }
 }
 
-// Fonction pour libérer le réseau de neurones
+/**
+ * @brief Libère la mémoire allouée à un réseau de neurones.
+ * @param network Pointeur vers le réseau de neurones à libérer.
+ */
 void free_neural_network(NeuralNetwork* network) {
     if (network != NULL) {
         for (int i = 0; i < network->number_of_layers; i++) {
@@ -198,11 +212,11 @@ void free_neural_network(NeuralNetwork* network) {
 void forward_propagate_layer(Layer* layer, Matrix* input, int layer_index, int total_layers) {
     if (layer == NULL || input == NULL) return;
 
-    // Enregistrement de l'input pour la rétropropagation
+// Enregistrement de l'input pour la rétropropagation
     if (layer->inputs != NULL) {
         free_matrix(&(layer->inputs));
     }
-    layer->inputs = copy_matrix(input);
+    layer->inputs = copy_matrix(input); // Copie de l'input pour utilisation ultérieure dans la rétropropagation
 
 ////
     printf("Forward Propagate Layer: Input %dx%d, Weights %dx%d\n", 
@@ -211,7 +225,7 @@ void forward_propagate_layer(Layer* layer, Matrix* input, int layer_index, int t
 ////
 
     // Net input = Weights * Input + Biases
-    Matrix* net_input = dgemm(layer->weights, input);
+    Matrix* net_input = dgemm(layer->weights, input); // Calcul du net input (produit matriciel entre les poids et l'input, ajout des biais) cf // au dessus
 
 ////
     printf("Net Input Size: %dx%d\n", net_input->row, net_input->column);
@@ -219,7 +233,7 @@ void forward_propagate_layer(Layer* layer, Matrix* input, int layer_index, int t
 
     add_matrix(net_input, layer->biases);
 
-    // Si c'est la dernière couche, appliquer softmax, sinon appliquer la fonction d'activation habituelle
+// Application de softmax pour la dernière couche, sinon application de la fonction d'activation
     if (layer_index == total_layers - 1) {
         softmax(net_input);      // Appliquer softmax sur net_input
     } else {
@@ -319,7 +333,14 @@ void backward_propagate(NeuralNetwork* network, Matrix* output_error, double lea
     free_matrix(&error);
 }
 
-// Fonction pour déterminer l'indice de la plus grande valeur dans un vecteur
+
+
+/**
+ * @brief Détermine l'indice de la valeur maximale dans un tableau.
+ * @param array Tableau de valeurs.
+ * @param length Longueur du tableau.
+ * @return Indice de la valeur maximale.
+ */
 int argmax(double* array, int length) {
     int max_index = 0;
     double max_value = array[0];
@@ -332,13 +353,26 @@ int argmax(double* array, int length) {
     return max_index;
 }
 
-// Fonction pour vérifier si la prédiction est correcte
+/**
+ * @brief Vérifie si la prédiction est correcte.
+ * @param output Sortie du réseau de neurones.
+ * @param label Étiquette réelle.
+ * @return Vrai si la prédiction est correcte, sinon faux.
+ */
 bool is_correct_prediction(Matrix* output, int label) {
     int predicted_label = argmax(output->value[0], output->column);
     return predicted_label == label;
 }
 
-// Entraînement du réseau
+
+/**
+ * @brief Entraîne le réseau de neurones.
+ * @param network Réseau de neurones à entraîner.
+ * @param input_data Données d'entrée.
+ * @param output_data Étiquettes des données d'entrée.
+ * @param epochs Nombre d'époques d'entraînement.
+ * @param learning_rate Taux d'apprentissage.
+ */
 void train_network(NeuralNetwork* network, Matrix* input_data, Matrix* output_data, int epochs, double learning_rate) {
     for (int epoch = 0; epoch < epochs; epoch++) {
 
@@ -379,7 +413,14 @@ void train_network(NeuralNetwork* network, Matrix* input_data, Matrix* output_da
     }
 }
 
-// Évaluation du réseau
+
+/**
+ * @brief Évalue le réseau de neurones.
+ * @param network Réseau de neurones à évaluer.
+ * @param input_data Données d'entrée pour l'évaluation.
+ * @param output_data Étiquettes réelles pour l'évaluation.
+ * @return Précision du réseau sur l'ensemble des données.
+ */
 double evaluate_network(NeuralNetwork* network, Matrix* input_data, Matrix* output_data) {
     int correct_predictions = 0;
     for (int i = 0; i < input_data->row; i++) {
@@ -404,6 +445,12 @@ double evaluate_network(NeuralNetwork* network, Matrix* input_data, Matrix* outp
     return (double)correct_predictions / input_data->row;
 }
 
+/**
+ * @brief Prépare les données d'entrée pour le réseau.
+ * @param images Tableau des images.
+ * @param number_of_images Nombre d'images.
+ * @return Matrice des données d'entrée normalisées.
+ */
 Matrix* prepare_input_data(uint8_t* images, int number_of_images) {
     Matrix* input_data = create_matrix(784, number_of_images); // 784 = 28 * 28 (taille de l'image)
     for (int i = 0; i < number_of_images; i++) {
@@ -414,6 +461,12 @@ Matrix* prepare_input_data(uint8_t* images, int number_of_images) {
     return input_data;
 }
 
+/**
+ * @brief Prépare les données de sortie pour le réseau.
+ * @param labels Étiquettes des images.
+ * @param number_of_images Nombre d'images.
+ * @return Matrice des étiquettes sous forme de one-hot encoding.
+ */
 Matrix* prepare_output_data(uint8_t* labels, int number_of_images) {
     Matrix* output_data = create_matrix(10, number_of_images); // 10 pour les chiffres de 0 à 9
     for (int i = 0; i < number_of_images; i++) {
@@ -424,6 +477,12 @@ Matrix* prepare_output_data(uint8_t* labels, int number_of_images) {
     return output_data;
 }
 
+/**
+ * @brief Extrait une rangée spécifique d'une matrice.
+ * @param matrix Matrice source.
+ * @param row_index Indice de la rangée à extraire.
+ * @return Rangée extraite sous forme de matrice.
+ */
 Matrix* get_row(Matrix* matrix, int row_index) {
     if (row_index < 0 || row_index >= matrix->row) {
         return NULL;
@@ -435,6 +494,12 @@ Matrix* get_row(Matrix* matrix, int row_index) {
     return row;
 }
 
+/**
+ * @brief Extrait une colonne spécifique d'une matrice.
+ * @param matrix Matrice source.
+ * @param col_index Indice de la colonne à extraire.
+ * @return Colonne extraite sous forme de matrice.
+ */
 ////
 Matrix* get_column(Matrix* matrix, int col_index) {
     if (col_index < 0 || col_index >= matrix->column) {
@@ -448,6 +513,12 @@ Matrix* get_column(Matrix* matrix, int col_index) {
 }
 ////
 
+/**
+ * @brief Calcule l'erreur entre la sortie attendue et la sortie actuelle.
+ * @param expected_output Sortie attendue.
+ * @param actual_output Sortie actuelle.
+ * @return Matrice d'erreur.
+ */
 Matrix* calculate_output_error(Matrix* expected_output, Matrix* actual_output) {
     if (expected_output == NULL || actual_output == NULL ||
         expected_output->row != actual_output->row || expected_output->column != actual_output->column) {
@@ -496,7 +567,7 @@ int main() {
     uint8_t* images = readMnistImages(imageFile, 0, number_of_images); // Charger les images
     uint8_t* labels = readMnistLabels(labelFile, 0, number_of_images); // Charger les labels
 
-    // Préparation des données pour l'entraînement
+// La taille de l'input_data est modifiée pour correspondre aux dimensions attendues par le réseau
     Matrix* input_data = prepare_input_data(images, number_of_images);  // Convertir les images en matrices
     Matrix* output_data = prepare_output_data(labels, number_of_images); // Convertir les labels en matrices
 
