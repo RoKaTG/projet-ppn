@@ -9,3 +9,4 @@ void backpropagate(Matrix* input, Matrix* output, Matrix* expected, Matrix* weig
 void softmax(Matrix* m);
 
 #endif // NEURAL_NETWORK_H
+
