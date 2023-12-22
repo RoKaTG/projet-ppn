@@ -30,3 +30,9 @@ To start training and testing the network, run: `make run`.
 
 Several features planned for semester 2, such as parallelization, benchmarking, and advanced debugging tools, are not yet implemented, but also some features have been implemented but are not called in the current version. These features have been added for debugging purposes or will be used during Semester 2 for benchmarking and performance improvement, including functions like "save" and "load network" to save and load the network's state, etc. (see the report for more details).
 The project is continuously evolving, and these features will be added in future updates.
+
+Project made by : 
+MSILINI Yassine
+BASLIMANE Riad Mohamed
+ARHAB Sofiane
+CHABANE Khaled
