@@ -18,6 +18,9 @@ typedef struct {
     Layer** layers;       // Tableau des couches
 } NeuralNetwork;
 
+
+double sigmoid(double x);
+double sigmoid_derivative(double x);
 void softmax(Matrix* m);
 
 #endif // NEURAL_NETWORK_H
