@@ -23,5 +23,7 @@ double sigmoid(double x);
 double sigmoid_derivative(double x);
 void softmax(Matrix* m);
 
+Layer* create_layer(int input_size, int output_size, double (*activation_func)(double), double (*activation_derivative_func)(double));
+
 #endif // NEURAL_NETWORK_H
 
