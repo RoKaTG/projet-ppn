@@ -274,6 +274,27 @@ void train_network(NeuralNetwork* network, Matrix* input_data, Matrix* output_da
     }
 }
 
+Matrix* calculate_output_error(Matrix* expected_output, Matrix* actual_output) {
+    if (expected_output == NULL || actual_output == NULL ||
+        expected_output->row != actual_output->row || expected_output->column != actual_output->column) {
+        return NULL; // Gestion d'erreur
+    }
+
+    Matrix* error = create_matrix(expected_output->row, expected_output->column);
+    if (error == NULL) {
+        return NULL; // Gestion d'erreur si la création de la matrice échoue
+    }
+
+    for (int i = 0; i < error->row; i++) {
+        for (int j = 0; j < error->column; j++) {
+            double diff = expected_output->value[i][j] - actual_output->value[i][j];
+            error->value[i][j] = diff * diff; // Calcul de l'erreur quadratique
+        }
+    }
+
+    return error;
+}
+
 int main() {
     return 0;
 }
