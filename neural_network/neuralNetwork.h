@@ -18,12 +18,13 @@ typedef struct {
     Layer** layers;       // Tableau des couches
 } NeuralNetwork;
 
-void apply_function(Matrix* m, double (*func)(double));
-void apply_function_derivative(Matrix* m, double (*func)(double));
 
 double sigmoid(double x);
 double sigmoid_derivative(double x);
 void softmax(Matrix* m);
+
+void apply_function(Matrix* m, double (*func)(double));
+void apply_function_derivative(Matrix* m, double (*func)(double));
 
 Layer* create_layer(int input_size, int output_size, double (*activation_func)(double), double (*activation_derivative_func)(double));
 
