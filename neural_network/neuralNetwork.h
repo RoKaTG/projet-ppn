@@ -18,6 +18,7 @@ typedef struct {
     Layer** layers;       // Tableau des couches
 } NeuralNetwork;
 
+void softmax(Matrix* m);
 
 #endif // NEURAL_NETWORK_H
 
