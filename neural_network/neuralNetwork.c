@@ -131,6 +131,39 @@ void free_layer(Layer* layer) {
     }
 }
 
+void backward_propagate_error(Layer* layer, Matrix* error, double learning_rate) {
+    if (layer == NULL || error == NULL) return;
+
+    // Gradient = Error * Derivative of the activation function
+    Matrix* gradient = copy_matrix(error);
+    apply_function_derivative(gradient, layer->activation_function_derivative);
+
+    // Ajustement des poids : W += learning_rate * (Gradient * Transpose(Input))
+    Matrix* input_transposed = transpose_matrix(layer->inputs);
+    Matrix* delta_weights = dgemm(gradient, input_transposed);
+
+////
+    printf("Backward Layer: Error %dx%d, Weights %dx%d, Delta Weights %dx%d\n", 
+       error->row, error->column, 
+       layer->weights->row, layer->weights->column, 
+       delta_weights->row, delta_weights->column);
+////
+
+    scale_matrix(delta_weights, learning_rate);
+    add_matrix(layer->weights, delta_weights);
+
+    // Ajustement des biais : B += learning_rate * Gradient
+    scale_matrix(gradient, learning_rate);
+    add_matrix(layer->biases, gradient);
+
+////
+    printf("Backward Layer: Taille error %dx%d, Taille weights %dx%d\n", error->row, error->column, layer->weights->row, layer->weights->column);
+////    
+    free_matrix(&delta_weights);
+    free_matrix(&input_transposed);
+    free_matrix(&gradient);
+}
+
 int main() {
     return 0;
 }
