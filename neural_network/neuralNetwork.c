@@ -317,6 +317,16 @@ Matrix* get_column(Matrix* matrix, int col_index) {
     return column;
 }
 
+Matrix* prepare_input_data(uint8_t* images, int number_of_images) {
+    Matrix* input_data = create_matrix(784, number_of_images); // 784 = 28 * 28 (taille de l'image)
+    for (int i = 0; i < number_of_images; i++) {
+        for (int j = 0; j < 784; j++) {
+            input_data->value[j][i] = images[i * 784 + j] / 255.0; // Normalisation
+        }
+    }
+    return input_data;
+}
+
 int main() {
     return 0;
 }
