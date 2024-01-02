@@ -45,5 +45,7 @@ Matrix* calculate_output_error(Matrix* expected_output, Matrix* actual_output);
 Matrix* get_row(Matrix* matrix, int row_index);
 Matrix* get_column(Matrix* matrix, int col_index);
 
+Matrix* prepare_input_data(uint8_t* images, int number_of_images);
+
 #endif // NEURAL_NETWORK_H
 
