@@ -234,6 +234,46 @@ void backward_propagate(NeuralNetwork* network, Matrix* output_error, double lea
     free_matrix(&error);
 }
 
+void train_network(NeuralNetwork* network, Matrix* input_data, Matrix* output_data, int epochs, double learning_rate) {
+    for (int epoch = 0; epoch < epochs; epoch++) {
+
+////
+        printf("Epoch %d start: input_data size %dx%d, output_data size %dx%d\n",
+                epoch, input_data->row, input_data->column, output_data->row, output_data->column);
+////
+
+        for (int i = 0; i < input_data->row; i++) {
+            // Sélectionner un échantillon du dataset
+            
+////
+            Matrix* input_sample = get_column(input_data, i);
+////
+
+            //Matrix* input_sample = get_row(input_data, i);
+            Matrix* output_sample = get_row(output_data, i);
+
+            // Propagation avant
+            forward_propagate(network, input_sample);
+
+            // Calcul de l'erreur
+            Matrix* output_error = calculate_output_error(output_sample, network->layers[network->number_of_layers - 1]->outputs);
+
+            // Rétropropagation
+            backward_propagate(network, output_error, learning_rate);
+
+            // Libération des ressources
+            free_matrix(&input_sample);
+            free_matrix(&output_sample);
+            free_matrix(&output_error);
+        }
+
+//// 
+        printf("Epoch %d end: input_data size %dx%d, output_data size %dx%d\n",
+               epoch, input_data->row, input_data->column, output_data->row, output_data->column);
+////
+    }
+}
+
 int main() {
     return 0;
 }
