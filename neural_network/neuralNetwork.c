@@ -168,6 +168,19 @@ void forward_propagate_layer(Layer* layer, Matrix* input, int layer_index, int t
 ////
 }
 
+void forward_propagate(NeuralNetwork* network, Matrix* input) {
+    if (network == NULL || input == NULL) return;
+
+    Matrix* current_input = input;
+    for (int i = 0; i < network->number_of_layers; i++) {
+        forward_propagate_layer(network->layers[i], current_input, i, network->number_of_layers);
+
+        if (i < network->number_of_layers - 1) {
+            current_input = network->layers[i]->outputs;
+        }
+    }
+}
+
 int main() {
     return 0;
 }
