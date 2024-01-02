@@ -164,6 +164,26 @@ void backward_propagate_error(Layer* layer, Matrix* error, double learning_rate)
     free_matrix(&gradient);
 }
 
+void backward_propagate(NeuralNetwork* network, Matrix* output_error, double learning_rate) {
+    if (network == NULL || output_error == NULL) return;
+
+    Matrix* error = output_error;
+    for (int i = network->number_of_layers - 1; i >= 0; i--) {
+        Layer* layer = network->layers[i];
+        backward_propagate_error(layer, error, learning_rate);
+
+        if (i > 0) {
+            Matrix* transposed_weights = transpose_matrix(layer->weights);
+            Matrix* prev_error = dgemm(transposed_weights, error);
+            free_matrix(&error);
+            error = prev_error;
+            free_matrix(&transposed_weights);
+        }
+    }
+
+    free_matrix(&error);
+}
+
 int main() {
     return 0;
 }
