@@ -27,6 +27,9 @@ void apply_function(Matrix* m, double (*func)(double));
 void apply_function_derivative(Matrix* m, double (*func)(double));
 
 Layer* create_layer(int input_size, int output_size, double (*activation_func)(double), double (*activation_derivative_func)(double));
+NeuralNetwork* create_neural_network(int* sizes, int number_of_layers, double (*activation_functions[])(double), double (*activation_derivatives[])(double), int firstLayerSize);
+
+void free_neural_network(NeuralNetwork* network);
 
 #endif // NEURAL_NETWORK_H
 
