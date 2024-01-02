@@ -18,6 +18,7 @@ typedef struct {
     Layer** layers;       // Tableau des couches
 } NeuralNetwork;
 
+double sigmoid(double x);
 
 #endif // NEURAL_NETWORK_H
 
