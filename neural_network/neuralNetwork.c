@@ -131,6 +131,56 @@ void free_layer(Layer* layer) {
     }
 }
 
+
+void forward_propagate_layer(Layer* layer, Matrix* input, int layer_index, int total_layers) {
+    if (layer == NULL || input == NULL) return;
+
+    // Enregistrement de l'input pour la rétropropagation
+    if (layer->inputs != NULL) {
+        free_matrix(&(layer->inputs));
+    }
+    layer->inputs = copy_matrix(input);
+
+////
+    printf("Forward Propagate Layer: Input %dx%d, Weights %dx%d\n", 
+       input->row, input->column, 
+       layer->weights->row, layer->weights->column);
+////
+
+    // Net input = Weights * Input + Biases
+    Matrix* net_input = dgemm(layer->weights, input);
+
+////
+    printf("Net Input Size: %dx%d\n", net_input->row, net_input->column);
+////
+
+    add_matrix(net_input, layer->biases);
+
+    // Si c'est la dernière couche, appliquer softmax, sinon appliquer la fonction d'activation habituelle
+    if (layer_index == total_layers - 1) {
+        softmax(net_input);      // Appliquer softmax sur net_input
+    } else {
+        apply_function(net_input, layer->activation_function);
+    }
+
+    layer->outputs = net_input; // Assigner net_input à layer->outputs
+////    
+    printf("Forward Layer %d: Taille input %dx%d, Taille output %dx%d\n", layer_index, input->row, input->column, layer->outputs->row, layer->outputs->column);
+////
+}
+
+void forward_propagate(NeuralNetwork* network, Matrix* input) {
+    if (network == NULL || input == NULL) return;
+
+    Matrix* current_input = input;
+    for (int i = 0; i < network->number_of_layers; i++) {
+        forward_propagate_layer(network->layers[i], current_input, i, network->number_of_layers);
+
+        if (i < network->number_of_layers - 1) {
+            current_input = network->layers[i]->outputs;
+        }
+    }
+
 void backward_propagate_error(Layer* layer, Matrix* error, double learning_rate) {
     if (layer == NULL || error == NULL) return;
 

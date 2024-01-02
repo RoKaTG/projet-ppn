@@ -32,6 +32,10 @@ NeuralNetwork* create_neural_network(int* sizes, int number_of_layers, double (*
 void free_neural_network(NeuralNetwork* network);
 void free_layer(Layer* layer);
 
+
+void forward_propagate_layer(Layer* layer, Matrix* input, int layer_index, int total_layers);
+void forward_propagate(NeuralNetwork* network, Matrix* input);
+
 void backward_propagate_error(Layer* layer, Matrix* error, double learning_rate);
 void backward_propagate(NeuralNetwork* network, Matrix* output_error, double learning_rate);
 
