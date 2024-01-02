@@ -18,6 +18,7 @@ typedef struct {
     Layer** layers;       // Tableau des couches
 } NeuralNetwork;
 
+void apply_function(Matrix* m, double (*func)(double));
 
 #endif // NEURAL_NETWORK_H
 
