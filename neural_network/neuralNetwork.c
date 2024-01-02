@@ -327,6 +327,16 @@ Matrix* prepare_input_data(uint8_t* images, int number_of_images) {
     return input_data;
 }
 
+Matrix* prepare_output_data(uint8_t* labels, int number_of_images) {
+    Matrix* output_data = create_matrix(10, number_of_images); // 10 pour les chiffres de 0 à 9
+    for (int i = 0; i < number_of_images; i++) {
+        for (int j = 0; j < 10; j++) {
+            output_data->value[j][i] = (labels[i] == j) ? 1.0 : 0.0; // One-hot encoding
+        }
+    }
+    return output_data;
+}
+
 int main() {
     return 0;
 }
