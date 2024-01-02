@@ -30,6 +30,39 @@ void softmax(Matrix* m) {
     }
 }
 
+Layer* create_layer(int input_size, int output_size, double (*activation_func)(double), double (*activation_derivative_func)(double)) {
+    Layer* layer = (Layer*)malloc(sizeof(Layer));
+    if (layer == NULL) {
+        return NULL;
+    }
+
+    // Initialisation des poids et des biais
+    layer->weights = create_matrix(output_size, input_size); //vecteur entrée * taille sortie couche
+    layer->biases = create_matrix(output_size, 1);
+
+////
+    printf("Layer created: Weights %dx%d, Biases %dx%d\n", 
+       layer->weights->row, layer->weights->column, 
+       layer->biases->row, layer->biases->column);
+////
+
+    if (layer->weights == NULL || layer->biases == NULL) {
+        free(layer);
+        return NULL;
+    }
+
+    matrix_randomize(layer->weights, 0.0, 1.0); // Random initialization
+    matrix_randomize(layer->biases, 0.0, 1.0); // Random initialization
+
+    layer->activation_function = activation_func;
+    layer->activation_function_derivative = activation_derivative_func;
+    
+    layer->outputs = NULL;
+    layer->deltas = NULL;
+
+    return layer;
+}
+
 int main() {
     return 0;
 }
