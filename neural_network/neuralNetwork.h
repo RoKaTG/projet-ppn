@@ -30,6 +30,7 @@ Layer* create_layer(int input_size, int output_size, double (*activation_func)(d
 NeuralNetwork* create_neural_network(int* sizes, int number_of_layers, double (*activation_functions[])(double), double (*activation_derivatives[])(double), int firstLayerSize);
 
 void free_neural_network(NeuralNetwork* network);
+void free_layer(Layer* layer);
 
 #endif // NEURAL_NETWORK_H
 
