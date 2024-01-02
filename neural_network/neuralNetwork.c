@@ -111,6 +111,16 @@ NeuralNetwork* create_neural_network(int* sizes, int number_of_layers, double (*
     return network;
 }
 
+void free_neural_network(NeuralNetwork* network) {
+    if (network != NULL) {
+        for (int i = 0; i < network->number_of_layers; i++) {
+            free_layer(network->layers[i]);
+        }
+        free(network->layers);
+        free(network);
+    }
+}
+
 int main() {
     return 0;
 }
