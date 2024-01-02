@@ -79,6 +79,38 @@ Layer* create_layer(int input_size, int output_size, double (*activation_func)(d
     return layer;
 }
 
+NeuralNetwork* create_neural_network(int* sizes, int number_of_layers, double (*activation_functions[])(double), double (*activation_derivatives[])(double), int firstLayerSize) {
+    NeuralNetwork* network = (NeuralNetwork*)malloc(sizeof(NeuralNetwork));
+    if (network == NULL) {
+        return NULL;
+    }
+
+    firstLayerSize = 784;
+
+    network->number_of_layers = number_of_layers;
+    network->layers = (Layer**)malloc(number_of_layers * sizeof(Layer*));
+    if (network->layers == NULL) {
+        free(network);
+        return NULL;
+    }
+
+    for (int i = 0; i < number_of_layers; i++) {
+        int input_size = i == 0 ? firstLayerSize : sizes[i-1];
+        int output_size = sizes[i];
+        network->layers[i] = create_layer(input_size, output_size, activation_functions[i], activation_derivatives[i]);
+        if (network->layers[i] == NULL) {
+            for (int j = 0; j < i; j++) {
+                free_layer(network->layers[j]);
+            }
+            free(network->layers);
+            free(network);
+            return NULL;
+        }
+    }
+
+    return network;
+}
+
 int main() {
     return 0;
 }
