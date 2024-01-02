@@ -17,7 +17,7 @@ Make sure you have the following installed on your system before getting started
 
 ## Testing
 
-To ensure everything is set up correctly, run: `make test`.
+To ensure everything is set up correctly, run: `make test_matrix` & `make test_operand`.
 
 ## Training and Testing the Network
 
