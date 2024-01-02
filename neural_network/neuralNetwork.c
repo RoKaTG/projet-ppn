@@ -295,6 +295,28 @@ Matrix* calculate_output_error(Matrix* expected_output, Matrix* actual_output) {
     return error;
 }
 
+Matrix* get_row(Matrix* matrix, int row_index) {
+    if (row_index < 0 || row_index >= matrix->row) {
+        return NULL;
+    }
+    Matrix* row = create_matrix(matrix->column, 1);
+    for (int i = 0; i < matrix->column; i++) {
+        row->value[i][0] = matrix->value[row_index][i];
+    }
+    return row;
+}
+
+Matrix* get_column(Matrix* matrix, int col_index) {
+    if (col_index < 0 || col_index >= matrix->column) {
+        return NULL;
+    }
+    Matrix* column = create_matrix(matrix->row, 1);
+    for (int i = 0; i < matrix->row; i++) {
+        column->value[i][0] = matrix->value[i][col_index];
+    }
+    return column;
+}
+
 int main() {
     return 0;
 }
