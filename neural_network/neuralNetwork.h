@@ -39,5 +39,7 @@ void forward_propagate(NeuralNetwork* network, Matrix* input);
 void backward_propagate_error(Layer* layer, Matrix* error, double learning_rate);
 void backward_propagate(NeuralNetwork* network, Matrix* output_error, double learning_rate);
 
+void train_network(NeuralNetwork* network, Matrix* input_data, Matrix* output_data, int epochs, double learning_rate);
+
 #endif // NEURAL_NETWORK_H
 
