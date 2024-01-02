@@ -19,6 +19,7 @@ typedef struct {
 } NeuralNetwork;
 
 void apply_function(Matrix* m, double (*func)(double));
+void apply_function_derivative(Matrix* m, double (*func)(double));
 
 #endif // NEURAL_NETWORK_H
 
