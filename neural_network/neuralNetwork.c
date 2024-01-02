@@ -121,6 +121,16 @@ void free_neural_network(NeuralNetwork* network) {
     }
 }
 
+void free_layer(Layer* layer) {
+    if (layer != NULL) {
+        free_matrix(&(layer->weights));
+        free_matrix(&(layer->biases));
+        free_matrix(&(layer->outputs));
+        free_matrix(&(layer->deltas));
+        free(layer);
+    }
+}
+
 int main() {
     return 0;
 }
