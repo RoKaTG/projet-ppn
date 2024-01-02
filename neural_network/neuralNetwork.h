@@ -19,6 +19,7 @@ typedef struct {
 } NeuralNetwork;
 
 double sigmoid(double x);
+double sigmoid_derivative(double x);
 
 #endif // NEURAL_NETWORK_H
 
