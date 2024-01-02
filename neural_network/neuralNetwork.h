@@ -40,6 +40,7 @@ void backward_propagate_error(Layer* layer, Matrix* error, double learning_rate)
 void backward_propagate(NeuralNetwork* network, Matrix* output_error, double learning_rate);
 
 void train_network(NeuralNetwork* network, Matrix* input_data, Matrix* output_data, int epochs, double learning_rate);
+Matrix* calculate_output_error(Matrix* expected_output, Matrix* actual_output);
 
 #endif // NEURAL_NETWORK_H
 
