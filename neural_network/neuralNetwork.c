@@ -180,6 +180,7 @@ void forward_propagate(NeuralNetwork* network, Matrix* input) {
             current_input = network->layers[i]->outputs;
         }
     }
+}
 
 void backward_propagate_error(Layer* layer, Matrix* error, double learning_rate) {
     if (layer == NULL || error == NULL) return;
