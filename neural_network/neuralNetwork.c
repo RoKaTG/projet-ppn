@@ -296,6 +296,116 @@ Matrix* calculate_output_error(Matrix* expected_output, Matrix* actual_output) {
     return error;
 }
 
+Matrix* get_row(Matrix* matrix, int row_index) {
+    if (row_index < 0 || row_index >= matrix->row) {
+        return NULL;
+    }
+    Matrix* row = create_matrix(matrix->column, 1);
+    for (int i = 0; i < matrix->column; i++) {
+        row->value[i][0] = matrix->value[row_index][i];
+    }
+    return row;
+}
+
+Matrix* get_column(Matrix* matrix, int col_index) {
+    if (col_index < 0 || col_index >= matrix->column) {
+        return NULL;
+    }
+    Matrix* column = create_matrix(matrix->row, 1);
+    for (int i = 0; i < matrix->row; i++) {
+        column->value[i][0] = matrix->value[i][col_index];
+    }
+    return column;
+}
+
+Matrix* prepare_input_data(uint8_t* images, int number_of_images) {
+    Matrix* input_data = create_matrix(784, number_of_images); // 784 = 28 * 28 (taille de l'image)
+    for (int i = 0; i < number_of_images; i++) {
+        for (int j = 0; j < 784; j++) {
+            input_data->value[j][i] = images[i * 784 + j] / 255.0; // Normalisation
+        }
+    }
+    return input_data;
+}
+
+Matrix* prepare_output_data(uint8_t* labels, int number_of_images) {
+    Matrix* output_data = create_matrix(10, number_of_images); // 10 pour les chiffres de 0 à 9
+    for (int i = 0; i < number_of_images; i++) {
+        for (int j = 0; j < 10; j++) {
+            output_data->value[j][i] = (labels[i] == j) ? 1.0 : 0.0; // One-hot encoding
+        }
+    }
+    return output_data;
+}
+
 int main() {
+    srand((unsigned int)time(NULL));
+        
+    // Configuration du réseau
+    int number_of_images = 100; 
+    int sizes[] = {128, 10}; 
+    double (*activation_functions[])(double) = {sigmoid, sigmoid}; 
+    double (*activation_deriv[])(double) = {sigmoid_derivative, sigmoid_derivative}; 
+
+    NeuralNetwork* network = create_neural_network(sizes, 2, activation_functions, activation_deriv, 784);
+
+////
+    printf("Réseau initialisé avec %d couches\n", network->number_of_layers);
+
+////
+    // Chargement des données MNIST
+    FILE* imageFile = fopen("../mnist/train-images-idx3-ubyte", "rb");
+    FILE* labelFile = fopen("../mnist/train-labels-idx1-ubyte", "rb");
+    uint8_t* images = readMnistImages(imageFile, 0, number_of_images); // Charger les images
+    uint8_t* labels = readMnistLabels(labelFile, 0, number_of_images); // Charger les labels
+
+    // Configuration de l'entraînement
+    const double learning_rate = 0.001;
+    const int epochs = 10; // Nombre d'epochs pour l'entraînement
+
+    // Préparation des données pour l'entraînement
+    Matrix* input_data = prepare_input_data(images, number_of_images);  // Convertir les images en matrices
+    Matrix* output_data = prepare_output_data(labels, number_of_images); // Convertir les labels en matrices
+
+    // Entraînement du réseau
+ 
+////
+     printf("Before training: input_data size %dx%d, output_data size %dx%d\n",
+           input_data->row, input_data->column, output_data->row, output_data->column);
+////
+
+    train_network(network, input_data, output_data, epochs, learning_rate);
+
+////
+    printf("After training: input_data size %dx%d, output_data size %dx%d\n",
+           input_data->row, input_data->column, output_data->row, output_data->column);
+////
+
+    // Tester avec quelques images
+    for (int i = 0; i < 100; i++) {
+        Matrix* input_sample = get_column(input_data, i);
+        printf("Taille de input_data : %d * %d\n", input_data->row, input_data->column);
+        printf("Taille de input_sample : %d * %d\n", input_sample->row, input_sample->column);
+        forward_propagate(network, input_sample);
+        Matrix* output = network->layers[network->number_of_layers - 1]->outputs;
+
+        printf("Image %d, Probabilités: ", i);
+        for (int j = 0; j < output->row; j++) {
+            printf("%.2f ", output->value[j][0]);
+        }
+        printf("\n");
+
+        free_matrix(&input_sample);
+    }
+
+    // Libération des ressources
+    free(images);
+    free(labels);
+    fclose(imageFile);
+    fclose(labelFile);
+    free_neural_network(network);
+    free_matrix(&input_data);
+    free_matrix(&output_data);
+        
     return 0;
 }
