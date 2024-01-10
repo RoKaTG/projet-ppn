@@ -42,5 +42,10 @@ void backward_propagate(NeuralNetwork* network, Matrix* output_error, double lea
 void train_network(NeuralNetwork* network, Matrix* input_data, Matrix* output_data, int epochs, double learning_rate);
 Matrix* calculate_output_error(Matrix* expected_output, Matrix* actual_output);
 
+Matrix* get_row(Matrix* matrix, int row_index);
+Matrix* get_column(Matrix* matrix, int col_index);
+
+Matrix* prepare_input_data(uint8_t* images, int number_of_images);
+Matrix* prepare_output_data(uint8_t* labels, int number_of_images);
 #endif // NEURAL_NETWORK_H
 
