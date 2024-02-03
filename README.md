@@ -41,10 +41,10 @@ The project is continuously evolving, and these features will be added in future
 
 Project made by : 
 MSILINI Yassine,
-BASLIMANE Riad Mohamed (not anymore, he decided to the stop the Master's degree),
-ARHAB Sofiane,
-CHABANE Khaled.
-<<<<<<< HEAD
 
-=======
->>>>>>> 5c7177adef552a4826d8f7f729e6adf0490900b2
+BASLIMANE Riad Mohamed (not anymore, he decided to the stop the Master's degree),
+
+ARHAB Sofiane,
+
+CHABANE Khaled.
+
