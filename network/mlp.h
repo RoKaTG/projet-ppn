@@ -47,6 +47,9 @@ Matrix* get_column(Matrix* matrix, int col_index);
 
 Matrix* prepare_input_data(uint8_t* images, int number_of_images);
 Matrix* prepare_output_data(uint8_t* labels, int number_of_images);
+<<<<<<< HEAD:network/mlp.h
 
+=======
+>>>>>>> 5c7177adef552a4826d8f7f729e6adf0490900b2:neural_network/neuralNetwork.h
 #endif // NEURAL_NETWORK_H
 

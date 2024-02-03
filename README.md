@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ## Tree & branches explanation
+=======
+## Trees & branches explanation
+>>>>>>> 5c7177adef552a4826d8f7f729e6adf0490900b2
 
   You can note that we have three different branches. In the main branch, we have a neural network unfinished mathematically but compilable and executable (and so it can produce outputs that are either incorrect or correct, with some debug prints displaying the dimensions of every vector and matrix for each operation requiring specific dimensions, such as dot product (multiplication of matrix and vector)).
 
@@ -44,4 +48,7 @@ MSILINI Yassine,
 BASLIMANE Riad Mohamed (not anymore, he decided to the stop the Master's degree),
 ARHAB Sofiane,
 CHABANE Khaled.
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5c7177adef552a4826d8f7f729e6adf0490900b2
