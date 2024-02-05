@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "../../include/networks/mlp_blas.h"
+#include "../../include/networks/activation.h"
  
 /**************************************/
 /*                                    */
