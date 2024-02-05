@@ -33,8 +33,24 @@ typedef struct {
 
 /**************************************/
 /*                                    */
-/*          Function's headers        */
+/*          Network's headers         */
 /*                                    */
 /**************************************/
 
 MLP* network_create(int numLayers, int *layerSizes, double learningRate);
+
+/**************************************/
+/*                                    */
+/*        Feedforward's headers       */
+/*                                    */
+/**************************************/
+
+double squaredNorm(double *x, int n);
+
+/**************************************/
+/*                                    */
+/*        Backward's headers          */
+/*                                    */
+/**************************************/
+
+void squaredNormPrime(double *x, double *dx, int n);
