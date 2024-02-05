@@ -74,6 +74,42 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
     return net;
 }
 
+/**************************************/
+/*                                    */
+/*       Feedforward application      */
+/*                                    */
+/**************************************/
+
+// NOTE We also need the squared norm and its derivative
+
+/**
+ * Compute the squared norm of a vector.
+ *
+ * @param x The input vector.
+ * @param n The number of elements in the vector.
+ * @return The squared norm of the vector.
+ */
+double squaredNorm(double *x, int n) {
+    double sum = 0.;
+    for(int i=0; i<n; i++) {
+        sum += x[i] * x[i];
+    }
+    return sum;
+}
+
+/**
+ * Compute the derivative of the squared norm with respect to the input vector.
+ *
+ * @param x  The input vector.
+ * @param dx The output vector containing the derivatives.
+ * @param n  The number of elements in the vector.
+ */
+void squaredNormPrime(double *x, double *dx, int n) {
+    for(int i=0; i<n; i++) {
+        dx[i] = 2 * x[i];
+    }
+}
+
 void main() {
     return 0;
 }
