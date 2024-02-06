@@ -366,11 +366,99 @@ void free_mlp(MLP *net) {
 /*       Main function used for       */
 /*          Initializing the MLP      */
 /*          Training phase            */
-/*          Train phase               */
+/*          Testing phase             */
 /*  Print accuracy & execution time   */
 /*                                    */
 /**************************************/
 
 void main() {
+    // Network's initialization
+    int layerSizes[] = {784, 300, 10}; // 1 hidden layer of size : 300
+    double learningRate = 0.01; // Learning rate being set at 10^-2 (will be decaying in a future update)
+    int numLayers = sizeof(layerSizes) / sizeof(layerSizes[0]);
+    MLP *net = create_mlp(numLayers, layerSizes, learningRate);
+
+    // Opening & reading the mnist train sample
+    FILE *imageFile = fopen("mnist/train-images-idx3-ubyte", "rb");
+    FILE *labelFile = fopen("mnist/train-labels-idx1-ubyte", "rb");
+    int numTrainingImages = 10000;   // Training sample
+    uint8_t *images = readMnistImages(imageFile, 0, numTrainingImages);
+    uint8_t *labels = readMnistLabels(labelFile, 0, numTrainingImages);
+
+    int numEpochs = 5; // Number of epoch
+
+    // Training cycle
+    for (int epoch = 0; epoch < numEpochs; epoch++) {
+        for (int i = 0; i < numTrainingImages; i++) {
+
+            double input[784];
+            double target[10] = {0};
+
+            // Normalization & One-hot encoding
+            for (int j = 0; j < 784; j++) {
+                input[j] = images[i * 784 + j] / 255.0;
+            }
+            target[labels[i]] = 1.0;
+
+            train(net, input, target);
+        }
+    }
+
+    // Testing the network after the training session (same methodology)
+    FILE *testImageFile = fopen("mnist/t10k-images-idx3-ubyte", "rb");
+    FILE *testLabelFile = fopen("mnist/t10k-labels-idx1-ubyte", "rb");
+    int numTestImages = 10000;
+    uint8_t *testImages = readMnistImages(testImageFile, 0, numTestImages);
+    uint8_t *testLabels = readMnistLabels(testLabelFile, 0, numTestImages);
+
+    int correctPredictions = 0;
+    for (int i = 0; i < numTestImages; i++) {
+        double input[784];
+        double *output = NULL;
+
+        // Normalization
+        for (int j = 0; j < 784; j++) {
+            input[j] = testImages[i * 784 + j] / 255.0;
+        }
+
+        output = predict(net, input);
+
+        // Comparing label's prediction & ideal label
+        int predictedLabel = 0;
+        double maxOutput = output[0];
+        for (int j = 1; j < 10; j++) {
+            if (output[j] > maxOutput) {
+                maxOutput = output[j];
+                predictedLabel = j;
+            }
+        }
+
+        if (predictedLabel == testLabels[i]) {
+            correctPredictions++;
+        }
+
+        // Printing the vector of prediction for each images
+        printf("Prédiction pour l'image %d : [", i);
+        for (int j = 0; j < 10; j++) {
+            printf("%f, ", output[j]);
+        }
+        printf("] - Label Réel : %d\n", testLabels[i]);    
+        //printf("Prédiction pour l'image %d : [", i);
+    }
+
+    //Printing the MLP's accuracy
+    printf("Précision: %.2f%%\n", 100.0 * correctPredictions / numTestImages);
+
+    // Deallocate memory
+    fclose(imageFile);
+    fclose(labelFile);
+    fclose(testImageFile);
+    fclose(testLabelFile);
+    free(images);
+    free(labels);
+    free(testImages);
+    free(testLabels);
+    free_mlp(net);
+
     return 0;
 }
