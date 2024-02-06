@@ -325,6 +325,52 @@ double * predict(MLP *net, double *input) {
     return netOutput;
 }
 
+/**************************************/
+/*                                    */
+/*         Memory management          */
+/*                                    */
+/**************************************/
+
+/**
+ * Deallocate memory for the MLP network.
+ * Cleans up all allocated weights, biases, and structures.
+ *
+ * @param net A pointer to the MLP network to free.
+ */
+void free_mlp(MLP *net) {
+    if (net != NULL) {
+        // NOTE We now have the same numbers of weight, biases, outputs
+        // Also, we do not need to free deltas (now a static array)
+        for (int i = 0; i < net->numLayers - 1; i++) {
+            free(net->weights[i]);
+            free(net->biases[i]);
+            free(net->outputs[i]);
+            free(net->dOutputs[i]);
+            free(net->matprod[i]);
+            free(net->inputAdjoints[i]);
+        }
+
+        free(net->weights);
+        free(net->biases);
+        free(net->outputs);
+        free(net->dOutputs);
+        free(net->inputAdjoints);
+        free(net->matprod);
+        free(net->layerSizes);
+        free(net);
+    }
+}
+
+/**************************************/
+/*                                    */
+/*       Main function used for       */
+/*          Initializing the MLP      */
+/*          Training phase            */
+/*          Train phase               */
+/*  Print accuracy & execution time   */
+/*                                    */
+/**************************************/
+
 void main() {
     return 0;
 }
