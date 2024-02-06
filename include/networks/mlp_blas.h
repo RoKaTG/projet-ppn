@@ -46,6 +46,7 @@ MLP* network_create(int numLayers, int *layerSizes, double learningRate);
 /**************************************/
 
 double squaredNorm(double *x, int n);
+int feedforward(MLP *net, double *input, double *target);
 
 /**************************************/
 /*                                    */
