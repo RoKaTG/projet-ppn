@@ -2,7 +2,7 @@
 
 /**************************************/
 /*                                    */
-/*          Network stuctures         */
+/*          Network stucture          */
 /*                                    */
 /**************************************/
 
@@ -65,3 +65,11 @@ void backpropagate(MLP *net, double *netInput);
 
 double *predict(MLP *net, double *input);
 void train(MLP *net, double *input, double *target);
+
+/**************************************/
+/*                                    */
+/*     Memory management header       */
+/*                                    */
+/**************************************/
+
+void free_mlp(MLP *net);
