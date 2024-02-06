@@ -252,6 +252,79 @@ void backpropagate(MLP *net, double *netInput) {
     }
 }
 
+/**************************************/
+/*                                    */
+/*    Training & Prediction phase     */
+/*                                    */
+/**************************************/
+
+/**
+ * Train the MLP network on a set of inputs and targets.
+ * Perform forward propagation and backpropagation to update the weights.
+ *
+ * @param net A pointer to the MLP network.
+ * @param input An array of inputs for training.
+ * @param target An array of target outputs for training.
+ */
+void train(MLP *net, double *input, double *target) {
+    // Feedforward
+    feedforward(net, input, target); // NOTE feedforward returns the scalar cost
+
+    // NOTE We  consider that computing the cost (output - target) is part of the feedworward
+    // Backpropagation should only apply the chain rule
+
+    // Backpropagation
+    backpropagate(net, input);
+}
+
+/**
+ * Predict the output of the MLP network for a given input.
+ * Use forward propagation to calculate the output.
+ *
+ * @param net A pointer to the MLP network.
+ * @param input An array of inputs for prediction.
+ * @return A pointer to the predicted output.
+ */
+// NOTE Because we don't need to compute or store any partial derivatives during the 
+// prediction phase, The returned pointer will simply point to the last element of 
+// "outputs" in the MLP structure
+
+double * predict(MLP *net, double *input) {
+    // NOTE This will point to the current layer input. Note how we are not copying any memory.
+    double *layerInput = input;
+
+    // Compute the output for each subsequent layer
+    // NOTE Indices start at 0 to make things clearer
+    for (int i = 0; i < net->numLayers - 1; i++) {
+        int M = net->layerSizes[i + 1];     // Number of rows in the weight matrix (and output size)
+        int N = 1;                        // Since the input is a vector
+        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+
+        // Perform matrix multiplication
+        // NOTE We are doing everything on the same layer, so we are indexing all matrices
+        // using simply i.
+        // Also, be careful, we need to set beta to 0 (we overwrite C/matprod completely)
+        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
+                    net->weights[i], K, layerInput, N, 0.0, net->matprod[i], N);
+
+        // Apply the activation function (sigmoid) to each element of net->outputs[i]
+        // NOTE Don't forget to apply biases (we do it in the same loop)
+        // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
+        // This way, we will be performing only 1 function call (vs M currently)
+        for (int j = 0; j < M; j++) {
+            net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+        }
+
+        // NOTE Set input for the next layer i+1
+        layerInput = net->outputs[i];
+    }
+
+    // NOTE From here, layerInput actually points to the last layer output -> we'll reuse it to compute 
+    // the network's delta and the error's norm
+    double *netOutput = layerInput;
+    return netOutput;
+}
+
 void main() {
     return 0;
 }
