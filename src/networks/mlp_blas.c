@@ -110,6 +110,68 @@ void squaredNormPrime(double *x, double *dx, int n) {
     }
 }
 
+/**
+ * Perform the feedforward operation for a Multilayer Perceptron (MLP) neural network.
+ * Compute the network's output given an input and compare it to the expected output.
+ *
+ * @param net The MLP network to perform the feedforward operation on.
+ * @param input The input data for the network.
+ * @param expected The expected output data for comparison.
+ * @return The calculated error (delta) between the network's output and the expected output.
+ */
+int feedforward(MLP *net, double *input, double *expected) {
+    printf("Starting feedforward, checking pointers...\n");
+    printf("net: %p, net->outputs[0]: %p\n", (void *)net, (void *)net->outputs[0]);
+
+    // NOTE This will point to the current layer input. Note how we are not copying any memory.
+    double *layerInput = input;
+
+    // Calculate the output for each subsequent layer
+    // NOTE Indices start at 0 to make things clearer
+    for (int i = 0; i < net->numLayers - 1; i++) {
+        int M = net->layerSizes[i + 1];   // Number of rows in the weight matrix (and output size)
+        int N = 1;                        // Since the input is a vector
+        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+
+        // Perform matrix multiplication
+        // NOTE We are doing everything on the same layer, so we are indexing all matrices
+        // using simply i.
+        // Also, be careful, we need to set beta to 0 (we overwrite C/matprod completely)
+        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
+                    net->weights[i], K, layerInput, N, 0.0, net->matprod[i], N);
+
+        // Apply the activation function (sigmoid) to each element of net->outputs[i]
+        // NOTE Don't forget to apply biases (we do it in the same loop)
+        // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
+        // This way, we will be performing only 1 function call (vs M currently)
+        for (int j = 0; j < M; j++) {
+            net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+            // NOTE Store activation function (sigmoid) derivative
+            net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
+        }
+
+        // NOTE Set input for the next layer i+1
+        layerInput = net->outputs[i];
+    }
+
+    // NOTE From here, layerInput actually points to the last layer output -> we'll reuse it to compute 
+    // the network's delta and the error's norm
+    double *netOutput = layerInput;
+
+    // NOTE Compute the cost
+    for (int i = 0; i < net->layerSizes[net->numLayers - 1]; i++) {
+        net->deltas[i] = expected[i] - netOutput[i];
+    }
+    // NOTE Computing squaredNorm is technically useless for the backward, but we'll do it 
+    // anyway because it is cheap, and it can be interesting to study the evolution of this value over 
+    // the training phase
+    net->delta = squaredNorm(&(net->deltas[0]), net->layerSizes[net->numLayers - 1]);
+    // NOTE However, we do need the squaredNormPrime for the backward
+    squaredNormPrime(&(net->deltas[0]), &(net->dDeltas[0]), net->layerSizes[net->numLayers - 1]);
+    
+    return net->delta;
+}
+
 void main() {
     return 0;
 }
