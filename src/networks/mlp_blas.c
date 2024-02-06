@@ -98,19 +98,6 @@ double squaredNorm(double *x, int n) {
 }
 
 /**
- * Compute the derivative of the squared norm with respect to the input vector.
- *
- * @param x  The input vector.
- * @param dx The output vector containing the derivatives.
- * @param n  The number of elements in the vector.
- */
-void squaredNormPrime(double *x, double *dx, int n) {
-    for(int i=0; i<n; i++) {
-        dx[i] = 2 * x[i];
-    }
-}
-
-/**
  * Perform the feedforward operation for a Multilayer Perceptron (MLP) neural network.
  * Compute the network's output given an input and compare it to the expected output.
  *
@@ -170,6 +157,99 @@ int feedforward(MLP *net, double *input, double *expected) {
     squaredNormPrime(&(net->deltas[0]), &(net->dDeltas[0]), net->layerSizes[net->numLayers - 1]);
     
     return net->delta;
+}
+
+/**************************************/
+/*                                    */
+/*       Backward application         */
+/*                                    */
+/**************************************/
+
+/**
+ * Compute the derivative of the squared norm with respect to the input vector.
+ *
+ * @param x  The input vector.
+ * @param dx The output vector containing the derivatives.
+ * @param n  The number of elements in the vector.
+ */
+void squaredNormPrime(double *x, double *dx, int n) {
+    for(int i=0; i<n; i++) {
+        dx[i] = 2 * x[i];
+    }
+}
+
+/**
+ * Perform backpropagation on the MLP network.
+ * Update the weights and biases based on the error computed with respect to the target output.
+ *
+ * @param net A pointer to the MLP network.
+ * @param netInput The input data for the network.
+ */
+void backpropagate(MLP *net, double *netInput) {
+    int lastLayerIndex = net->numLayers - 2; // NOTE This used to be "-1".
+
+    // NOTE Computing the cost was moved to the forward propagation
+    // Here, we will only apply the chain rule
+    
+    // NOTE Implicit chain rule application for the cost computation: 
+    //   zbar = ||c||bar = 1; minusdot=dDeltas in code; factdot=(1,...,1)
+    //   -> minusbar = minusdot*zbar;
+    //   -> factbar = factdot*minusbar = minusbar
+    // Thus, dDeltas already contains the adjoint for the last layer's output, and the next 
+    // operation is the last layer's activation function
+
+    // Propagate the error backward through the previous layers and update the weights and biases
+    // NOTE i>= is important here, to make sure we visit the last layer
+    double *prevInput = &(net->dDeltas[0]);
+    for (int i = lastLayerIndex; i >= 0; i--) {
+        int layerSize = net->layerSizes[i + 1];
+
+        int M = net->layerSizes[i + 1];     // Number of rows in the weight matrix (and output size)
+        int N = 1;                        // Since the input is a vector
+        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+
+        // plusbar = plusdot * lk+1bar (lk+1bar denotes the last output adkoint, prevInput in the code)
+        for (int j = 0; j < layerSize; j++) {
+            // NOTE We can overwrite dOutputs as we will not need it anymore.
+            // This avoids allocating temporary arrays to store the "current result"
+            net->dOutputs[i][j] = net->dOutputs[i][j] * prevInput[j];
+        }
+
+        // bbar = bdot * plusbar; bdot = 1
+        // Thus, bbar = bdot, and we can directly apply corrections to biases
+        for (int j = 0; j < layerSize; j++) {
+            net->biases[i][j] -= net->dOutputs[i][j] * net->learningRate;
+        }
+
+        // timesbar = timesdot * plusbar; timesdot = 1
+
+        // lkbar = lkdot * timesbar; This is one of the matprod special cases.
+        // We will compute the current layer input (= the previous layer output)
+        // This will be used to continue backprop for the previous layer
+        cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, K, N, M, 1.0, 
+                    net->weights[i], K, net->dOutputs[i], N, 0.0, net->inputAdjoints[i], N);
+
+        // wbar = wdot * timesbar; This is one of the matprod special cases.
+        // We'll compute the matprod between the previous output's transpose and timesbar
+        // We will directly apply the correction using the DGEMM 
+        // (by setting alpha to net->learningRate, and beta to 1)
+        double *matprodInput = NULL;
+        if (i > 0) {
+            matprodInput = net->outputs[i - 1];
+        }
+        else {
+            // Be careful, if i == 0, the previous layer's output is not defined.
+            // It will actually be the network's output
+            matprodInput = netInput;
+        }
+        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, K, N, net->learningRate, 
+                    net->dOutputs[i], N, matprodInput, N, 1.0, net->weights[i], K);
+
+        // Also, note how we perform the DGEMMs in this particular order, as we overwrite biases
+
+        // Finally, set the prevInput to the current inputAdjoint
+        prevInput = net->inputAdjoints[i];
+    }
 }
 
 void main() {
