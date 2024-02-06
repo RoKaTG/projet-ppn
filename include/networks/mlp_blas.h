@@ -55,3 +55,4 @@ int feedforward(MLP *net, double *input, double *target);
 /**************************************/
 
 void squaredNormPrime(double *x, double *dx, int n);
+void backpropagate(MLP *net, double *netInput);
