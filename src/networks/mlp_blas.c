@@ -380,8 +380,8 @@ int main() {
     MLP *net = create_mlp(numLayers, layerSizes, learningRate);
 
     // Opening & reading the mnist train sample
-    FILE *imageFile = fopen("../../data/train-images-idx3-ubyte", "rb");
-    FILE *labelFile = fopen("../../data/train-labels-idx1-ubyte", "rb");
+    FILE *imageFile = fopen("data/train-images-idx3-ubyte", "rb");
+    FILE *labelFile = fopen("data/train-labels-idx1-ubyte", "rb");
     int numTrainingImages = 10000;   // Training sample
     uint8_t *images = readMnistImages(imageFile, 0, numTrainingImages);
     uint8_t *labels = readMnistLabels(labelFile, 0, numTrainingImages);
@@ -406,8 +406,8 @@ int main() {
     }
 
     // Testing the network after the training session (same methodology)
-    FILE *testImageFile = fopen("../../data/t10k-images-idx3-ubyte", "rb");
-    FILE *testLabelFile = fopen("../../data/t10k-labels-idx1-ubyte", "rb");
+    FILE *testImageFile = fopen("data/t10k-images-idx3-ubyte", "rb");
+    FILE *testLabelFile = fopen("data/t10k-labels-idx1-ubyte", "rb");
     int numTestImages = 10000;
     uint8_t *testImages = readMnistImages(testImageFile, 0, numTestImages);
     uint8_t *testLabels = readMnistLabels(testLabelFile, 0, numTestImages);
