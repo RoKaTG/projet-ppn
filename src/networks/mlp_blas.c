@@ -9,6 +9,7 @@
 
 #include "../../include/networks/mlp_blas.h"
 #include "../../include/networks/activation.h"
+#include "../../include/mnist_reader/mnist_reader.h"
  
 /**************************************/
 /*                                    */
