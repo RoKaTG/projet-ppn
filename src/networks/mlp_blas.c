@@ -441,10 +441,13 @@ int main() {
         // Printing the vector of prediction for each images
         printf("Prédiction pour l'image %d : [", i);
         for (int j = 0; j < 10; j++) {
-            printf("%f, ", output[j]);
+            if (j != 9) {
+                printf("%f, ", output[j]);
+            }
+            if (j == 9) {
+                printf("%f] - Label Réel : %d\n", output[j], testLabels[i]); 
+            }
         }
-        printf("] - Label Réel : %d\n", testLabels[i]);    
-        //printf("Prédiction pour l'image %d : [", i);
     }
 
     //Printing the MLP's accuracy
