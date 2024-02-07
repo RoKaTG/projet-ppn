@@ -33,6 +33,7 @@ double sigmoid(double x) {
  * @param x The input value.
  * @return The derivative of the sigmoid function at that point.
  */
-double sigmoidPrime(double x) {
-    return exp(x) / pow((exp(-x) + 1), 2);
+double sigmoidPrime(double x) {    
+    double sig = sigmoid(x);
+    return sig * (1.0 - sig);
 }
