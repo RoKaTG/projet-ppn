@@ -372,7 +372,7 @@ void free_mlp(MLP *net) {
 /*                                    */
 /**************************************/
 
-void main() {
+int main() {
     // Network's initialization
     int layerSizes[] = {784, 300, 10}; // 1 hidden layer of size : 300
     double learningRate = 0.01; // Learning rate being set at 10^-2 (will be decaying in a future update)
