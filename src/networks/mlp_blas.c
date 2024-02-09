@@ -362,6 +362,62 @@ void free_mlp(MLP *net) {
     }
 }
 
+double testAccuracy(MLP *net, int numTestImages) {
+    FILE *testImageFile = fopen("data/t10k-images-idx3-ubyte", "rb");
+    FILE *testLabelFile = fopen("data/t10k-labels-idx1-ubyte", "rb");
+    uint8_t *testImages = readMnistImages(testImageFile, 0, numTestImages);
+    uint8_t *testLabels = readMnistLabels(testLabelFile, 0, numTestImages);
+
+    int correctPredictions = 0;
+    for (int i = 0; i < numTestImages; i++) {
+        double input[784];
+        double *output = NULL;
+
+        // Normalization
+        for (int j=0; j<784; j++) {
+            input[j] = testImages[i * 784 + j] / 255.0;
+        }
+
+        output = predict(net,input);
+
+        // Comparing label's prediction & ideal label
+        int predictedLabel=0;
+        double maxOutput=output[0];
+        for (int j=1;j<10;j++) {
+            if (output[j]>maxOutput) {
+                maxOutput=output[j];
+                predictedLabel=j;
+            }
+        }
+
+        if (predictedLabel==testLabels[i]) {
+            correctPredictions++;
+        }
+    // Printing the vector of prediction for each images
+        printf("Prédiction pour l'image %d : [", i);
+        for (int j = 0; j < 10; j++) {
+            if (j != 9) {
+                printf("%f, ", output[j]);
+            }
+            if (j == 9) {
+                printf("%f] - Label Réel : %d\n", output[j], testLabels[i]); 
+            }
+        }
+
+    }
+    //Calcule de la précision
+    double accuracy = 100.0*correctPredictions/numTestImages;
+    
+    
+    fclose(testImageFile);
+    fclose(testLabelFile);
+    free(testImages);
+    free(testLabels);
+
+    return accuracy;
+}
+
+
 /**************************************/
 /*                                    */
 /*       Main function used for       */
@@ -406,62 +462,17 @@ int main() {
     }
 
     // Testing the network after the training session (same methodology)
-    FILE *testImageFile = fopen("data/t10k-images-idx3-ubyte", "rb");
-    FILE *testLabelFile = fopen("data/t10k-labels-idx1-ubyte", "rb");
-    int numTestImages = 10000;
-    uint8_t *testImages = readMnistImages(testImageFile, 0, numTestImages);
-    uint8_t *testLabels = readMnistLabels(testLabelFile, 0, numTestImages);
-
-    int correctPredictions = 0;
-    for (int i = 0; i < numTestImages; i++) {
-        double input[784];
-        double *output = NULL;
-
-        // Normalization
-        for (int j = 0; j < 784; j++) {
-            input[j] = testImages[i * 784 + j] / 255.0;
-        }
-
-        output = predict(net, input);
-
-        // Comparing label's prediction & ideal label
-        int predictedLabel = 0;
-        double maxOutput = output[0];
-        for (int j = 1; j < 10; j++) {
-            if (output[j] > maxOutput) {
-                maxOutput = output[j];
-                predictedLabel = j;
-            }
-        }
-
-        if (predictedLabel == testLabels[i]) {
-            correctPredictions++;
-        }
-
-        // Printing the vector of prediction for each images
-        printf("Prédiction pour l'image %d : [", i);
-        for (int j = 0; j < 10; j++) {
-            if (j != 9) {
-                printf("%f, ", output[j]);
-            }
-            if (j == 9) {
-                printf("%f] - Label Réel : %d\n", output[j], testLabels[i]); 
-            }
-        }
-    }
-
+	float Acc = testAccuracy(net, 10000);
     //Printing the MLP's accuracy
-    printf("Précision: %.2f%%\n", 100.0 * correctPredictions / numTestImages);
+    printf("Précision: %.2f%%\n",Acc);
 
     // Deallocate memory
     fclose(imageFile);
     fclose(labelFile);
-    fclose(testImageFile);
-    fclose(testLabelFile);
+
     free(images);
     free(labels);
-    free(testImages);
-    free(testLabels);
+
     free_mlp(net);
 
     return 0;
