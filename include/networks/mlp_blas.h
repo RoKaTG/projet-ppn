@@ -68,6 +68,14 @@ void train(MLP *net, double *input, double *target);
 
 /**************************************/
 /*                                    */
+/*  Test and calculate the accuracy   */
+/*                                    */
+/**************************************/
+
+double testAccuracy(MLP *net, int numTestImages);
+
+/**************************************/
+/*                                    */
 /*     Memory management header       */
 /*                                    */
 /**************************************/
