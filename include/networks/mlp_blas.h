@@ -57,22 +57,15 @@ int feedforward(MLP *net, double *input, double *target);
 void squaredNormPrime(double *x, double *dx, int n);
 void backpropagate(MLP *net, double *netInput);
 
-/**************************************/
-/*                                    */
-/* Training's & Prediction's headers  */
-/*                                    */
-/**************************************/
+/***************************************************/
+/*                                                 */
+/*  Training's & Prediction's & Testing's headers  */
+/*                                                 */
+/***************************************************/
 
 double *predict(MLP *net, double *input);
-void train(MLP *net, double *input, double *target);
-
-/**************************************/
-/*                                    */
-/*  Test and calculate the accuracy   */
-/*                                    */
-/**************************************/
-
-double testAccuracy(MLP *net, int numTestImages);
+void trainMLP(MLP *net, int numEpochs, int numTrainingImages);
+double testMLP(MLP *net, int numTestImages);
 
 /**************************************/
 /*                                    */
