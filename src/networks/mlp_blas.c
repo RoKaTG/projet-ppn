@@ -108,8 +108,8 @@ double squaredNorm(double *x, int n) {
  * @return The calculated error (delta) between the network's output and the expected output.
  */
 int feedforward(MLP *net, double *input, double *expected) {
-    printf("Starting feedforward, checking pointers...\n");
-    printf("net: %p, net->outputs[0]: %p\n", (void *)net, (void *)net->outputs[0]);
+    //printf("Starting feedforward, checking pointers...\n");
+    //printf("net: %p, net->outputs[0]: %p\n", (void *)net, (void *)net->outputs[0]);
 
     // NOTE This will point to the current layer input. Note how we are not copying any memory.
     double *layerInput = input;
@@ -253,11 +253,11 @@ void backpropagate(MLP *net, double *netInput) {
     }
 }
 
-/**************************************/
-/*                                    */
-/*    Training & Prediction phase     */
-/*                                    */
-/**************************************/
+/*****************************************/
+/*                                       */
+/* Training & Prediction & Testing phase */
+/*                                       */
+/*****************************************/
 
 /**
  * Train the MLP network on a set of inputs and targets.
@@ -267,16 +267,49 @@ void backpropagate(MLP *net, double *netInput) {
  * @param input An array of inputs for training.
  * @param target An array of target outputs for training.
  */
-void train(MLP *net, double *input, double *target) {
-    // Feedforward
-    feedforward(net, input, target); // NOTE feedforward returns the scalar cost
+void trainMLP(MLP *net, int numEpochs, int numTrainingImages) {
+    // Paths to data files
+    const char *imageFilePath = "data/train-images-idx3-ubyte";
+    const char *labelFilePath = "data/train-labels-idx1-ubyte";
 
-    // NOTE We  consider that computing the cost (output - target) is part of the feedworward
-    // Backpropagation should only apply the chain rule
+    // Opening data files
+    FILE *imageFile = fopen(imageFilePath, "rb");
+    FILE *labelFile = fopen(labelFilePath, "rb");
+    if (!imageFile || !labelFile) {
+        printf("Error opening data files.\n");
+        return;
+    }
 
-    // Backpropagation
-    backpropagate(net, input);
+    // Reading training data
+    uint8_t *images = readMnistImages(imageFile, 0, numTrainingImages);
+    uint8_t *labels = readMnistLabels(labelFile, 0, numTrainingImages);
+
+    // Training cycle
+    for (int epoch = 0; epoch < numEpochs; epoch++) {
+        printf("Epoch %d/%d\n", epoch + 1, numEpochs);
+        for (int i = 0; i < numTrainingImages; i++) {
+            double input[784];
+            double target[10] = {0};
+
+            // Normalization and One-hot encoding
+            for (int j = 0; j < 784; j++) {
+                input[j] = images[i * 784 + j] / 255.0;
+            }
+            target[labels[i]] = 1.0;
+
+            // Forward and backward propagation
+            feedforward(net, input, target);
+            backpropagate(net, input);
+        }
+    }
+
+    // Cleanup
+    fclose(imageFile);
+    fclose(labelFile);
+    free(images);
+    free(labels);
 }
+
 
 /**
  * Predict the output of the MLP network for a given input.
@@ -286,11 +319,11 @@ void train(MLP *net, double *input, double *target) {
  * @param input An array of inputs for prediction.
  * @return A pointer to the predicted output.
  */
-// NOTE Because we don't need to compute or store any partial derivatives during the 
-// prediction phase, The returned pointer will simply point to the last element of 
-// "outputs" in the MLP structure
+double *predict(MLP *net, double *input) {
+    // NOTE Because we don't need to compute or store any partial derivatives during the 
+    // prediction phase, The returned pointer will simply point to the last element of 
+    // "outputs" in the MLP structure
 
-double * predict(MLP *net, double *input) {
     // NOTE This will point to the current layer input. Note how we are not copying any memory.
     double *layerInput = input;
 
@@ -325,6 +358,69 @@ double * predict(MLP *net, double *input) {
     double *netOutput = layerInput;
     return netOutput;
 }
+
+/**
+ * Test the MLP network using a dataset.
+ * Reads test images and labels from files and evaluates the network's performance.
+ *
+ * @param net A pointer to the MLP network.
+ * @param numTestImages Number of test images to evaluate.
+ * @return The accuracy of the network's predictions on the test dataset.
+ */
+double testMLP(MLP *net, int numTestImages) {
+    FILE *testImageFile = fopen("data/t10k-images-idx3-ubyte", "rb");
+    FILE *testLabelFile = fopen("data/t10k-labels-idx1-ubyte", "rb");
+    uint8_t *testImages = readMnistImages(testImageFile, 0, numTestImages);
+    uint8_t *testLabels = readMnistLabels(testLabelFile, 0, numTestImages);
+
+    int correctPredictions = 0;
+    for (int i = 0; i < numTestImages; i++) {
+        double input[784];
+        double *output = NULL;
+
+        // Normalization
+        for (int j = 0; j < 784; j++) {
+            input[j] = testImages[i * 784 + j] / 255.0;
+        }
+
+        output = predict(net,input);
+
+        // Comparing label's prediction & ideal label
+        int predictedLabel = 0;
+        double maxOutput = output[0];
+        for (int j = 1; j < 10; j++) {
+            if (output[j] > maxOutput) {
+                maxOutput = output[j];
+                predictedLabel = j;
+            }
+        }
+
+        if (predictedLabel == testLabels[i]) {
+            correctPredictions++;
+        }
+        // Printing the vector of prediction for each image
+        printf("Prediction for image %d: [", i);
+        for (int j = 0; j < 10; j++) {
+            if (j != 9) {
+                printf("%f, ", output[j]);
+            }
+            if (j == 9) {
+                printf("%f] - Real Label: %d\n", output[j], testLabels[i]); 
+            }
+        }
+
+    }
+    // Calculation of accuracy
+    double accuracy = 100.0 * correctPredictions / numTestImages;
+    
+    fclose(testImageFile);
+    fclose(testLabelFile);
+    free(testImages);
+    free(testLabels);
+
+    return accuracy;
+}
+
 
 /**************************************/
 /*                                    */
@@ -362,62 +458,6 @@ void free_mlp(MLP *net) {
     }
 }
 
-double testAccuracy(MLP *net, int numTestImages) {
-    FILE *testImageFile = fopen("data/t10k-images-idx3-ubyte", "rb");
-    FILE *testLabelFile = fopen("data/t10k-labels-idx1-ubyte", "rb");
-    uint8_t *testImages = readMnistImages(testImageFile, 0, numTestImages);
-    uint8_t *testLabels = readMnistLabels(testLabelFile, 0, numTestImages);
-
-    int correctPredictions = 0;
-    for (int i = 0; i < numTestImages; i++) {
-        double input[784];
-        double *output = NULL;
-
-        // Normalization
-        for (int j=0; j<784; j++) {
-            input[j] = testImages[i * 784 + j] / 255.0;
-        }
-
-        output = predict(net,input);
-
-        // Comparing label's prediction & ideal label
-        int predictedLabel=0;
-        double maxOutput=output[0];
-        for (int j=1;j<10;j++) {
-            if (output[j]>maxOutput) {
-                maxOutput=output[j];
-                predictedLabel=j;
-            }
-        }
-
-        if (predictedLabel==testLabels[i]) {
-            correctPredictions++;
-        }
-    // Printing the vector of prediction for each images
-        printf("Prédiction pour l'image %d : [", i);
-        for (int j = 0; j < 10; j++) {
-            if (j != 9) {
-                printf("%f, ", output[j]);
-            }
-            if (j == 9) {
-                printf("%f] - Label Réel : %d\n", output[j], testLabels[i]); 
-            }
-        }
-
-    }
-    //Calcule de la précision
-    double accuracy = 100.0*correctPredictions/numTestImages;
-    
-    
-    fclose(testImageFile);
-    fclose(testLabelFile);
-    free(testImages);
-    free(testLabels);
-
-    return accuracy;
-}
-
-
 /**************************************/
 /*                                    */
 /*       Main function used for       */
@@ -435,43 +475,18 @@ int main() {
     int numLayers = sizeof(layerSizes) / sizeof(layerSizes[0]);
     MLP *net = create_mlp(numLayers, layerSizes, learningRate);
 
-    // Opening & reading the mnist train sample
-    FILE *imageFile = fopen("data/train-images-idx3-ubyte", "rb");
-    FILE *labelFile = fopen("data/train-labels-idx1-ubyte", "rb");
+    int numTestImages = 10000;
     int numTrainingImages = 10000;   // Training sample
-    uint8_t *images = readMnistImages(imageFile, 0, numTrainingImages);
-    uint8_t *labels = readMnistLabels(labelFile, 0, numTrainingImages);
 
-    int numEpochs = 5; // Number of epoch
+    int numEpochs = 3; // Number of epoch
 
     // Training cycle
-    for (int epoch = 0; epoch < numEpochs; epoch++) {
-        for (int i = 0; i < numTrainingImages; i++) {
-
-            double input[784];
-            double target[10] = {0};
-
-            // Normalization & One-hot encoding
-            for (int j = 0; j < 784; j++) {
-                input[j] = images[i * 784 + j] / 255.0;
-            }
-            target[labels[i]] = 1.0;
-
-            train(net, input, target);
-        }
-    }
+    trainMLP(net, numEpochs, numTrainingImages);
 
     // Testing the network after the training session (same methodology)
-	float Acc = testAccuracy(net, 10000);
+	float res = testMLP(net, numTestImages);
     //Printing the MLP's accuracy
-    printf("Précision: %.2f%%\n",Acc);
-
-    // Deallocate memory
-    fclose(imageFile);
-    fclose(labelFile);
-
-    free(images);
-    free(labels);
+    printf("Précision: %.2f%%\n", res);
 
     free_mlp(net);
 
