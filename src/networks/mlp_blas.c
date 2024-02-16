@@ -476,9 +476,9 @@ int main() {
     MLP *net = create_mlp(numLayers, layerSizes, learningRate);
 
     int numTestImages = 10000;
-    int numTrainingImages = 10000;   // Training sample
+    int numTrainingImages = 60000;   // Training sample
 
-    int numEpochs = 3; // Number of epoch
+    int numEpochs = 20; // Number of epoch
 
     // Training cycle
     trainMLP(net, numEpochs, numTrainingImages);
