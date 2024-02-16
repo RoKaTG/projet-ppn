@@ -44,6 +44,25 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
  
     net->learningRate = learningRate;
 
+    // NOTE After initializing weights and biases
+    net->weightGradients = malloc((numLayers - 1) * sizeof(double *));
+    net->biasGradients = malloc((numLayers - 1) * sizeof(double *));
+
+    for (int i = 0; i < numLayers - 1; i++) {
+        int rows = layerSizes[i + 1];
+        int cols = layerSizes[i];
+        net->weightGradients[i] = malloc(rows * cols * sizeof(double));
+        net->biasGradients[i] = malloc(rows * sizeof(double));
+
+        // Initialize gradients to zero
+        for (int j = 0; j < rows * cols; j++) {
+            net->weightGradients[i][j] = 0.0;
+        }
+        for (int j = 0; j < rows; j++) {
+            net->biasGradients[i][j] = 0.0;
+        }
+    }
+
     srand(time(NULL));
 
     // Alloc individual layers
@@ -433,6 +452,73 @@ double testMLP(MLP *net, int numTestImages) {
     return accuracy;
 }
 
+/*****************************************/
+/*                                       */
+/*           Batch functions             */
+/*                                       */
+/*****************************************/
+
+void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda) {
+    // Reset gradient accumulators to zero for weights and biases
+    for (int i = 0; i < net->numLayers - 1; i++) {
+        memset(net->weightGradients[i], 0, net->layerSizes[i + 1] * net->layerSizes[i] * sizeof(double));
+        memset(net->biasGradients[i], 0, net->layerSizes[i + 1] * sizeof(double));
+    }
+
+    // Accumulate gradients for each input in the batch
+    for (int b = 0; b < batchSize; b++) {
+        // Feedforward to compute outputs and derivative outputs, but do not modify weights/biases
+        feedforward(net, inputs[b], targets[b]);  // Assuming modification to store intermediate derivatives
+
+        // Backpropagate errors and accumulate gradients without updating weights and biases
+        double *prevDelta = calloc(net->layerSizes[net->numLayers - 1], sizeof(double));
+        for (int i = net->numLayers - 2; i >= 0; i--) {
+            int M = net->layerSizes[i + 1];
+            int N = net->layerSizes[i];
+            double *delta = calloc(M, sizeof(double));
+
+            // Calculate delta for current layer
+            if (i == net->numLayers - 2) { // Output layer
+                for (int j = 0; j < M; j++) {
+                    delta[j] = (net->outputs[i][j] - targets[b][j]) * net->dOutputs[i][j];
+                }
+            } else { // Hidden layers
+                for (int j = 0; j < M; j++) {
+                    double sum = 0.0;
+                    for (int k = 0; k < net->layerSizes[i + 2]; k++) {
+                        sum += prevDelta[k] * net->weights[i + 1][k * M + j];
+                    }
+                    delta[j] = sum * net->dOutputs[i][j];
+                }
+            }
+
+            // Accumulate gradients for weights and biases
+            for (int j = 0; j < M; j++) {
+                net->biasGradients[i][j] += delta[j]; // Accumulate bias gradient
+                for (int k = 0; k < N; k++) {
+                    net->weightGradients[i][j * N + k] += delta[j] * (i > 0 ? net->outputs[i - 1][k] : inputs[b][k]); // Accumulate weight gradient
+                }
+            }
+
+            if (i < net->numLayers - 2) free(prevDelta);
+            prevDelta = delta;
+        }
+        free(prevDelta);
+    }
+
+    // NOTE We use average gradients to apply updates with L2 regularization
+    for (int i = 0; i < net->numLayers - 1; i++) {
+        int M = net->layerSizes[i + 1];
+        int N = net->layerSizes[i];
+        for (int j = 0; j < M; j++) {
+            net->biases[i][j] -= net->learningRate * net->biasGradients[i][j] / batchSize;
+            for (int k = 0; k < N; k++) {
+                double weightGradientAvg = net->weightGradients[i][j * N + k] / batchSize;
+                net->weights[i][j * N + k] -= net->learningRate * (weightGradientAvg + lambda * net->weights[i][j * N + k]);
+            }
+        }
+    }
+}
 
 /**************************************/
 /*                                    */
@@ -491,7 +577,7 @@ int main() {
     int numTestImages = 10000;
     int numTrainingImages = 60000;   // Training sample
 
-    int numEpochs = 20; // Number of epoch
+    int numEpochs = 5; // Number of epoch
 
     double lambda = 0.001;
     // Training cycle
