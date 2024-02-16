@@ -461,10 +461,11 @@ void free_mlp(MLP *net) {
 /**************************************/
 /*                                    */
 /*       Main function used for       */
-/*          Initializing the MLP      */
+/*          Initialization            */
 /*          Training phase            */
 /*          Testing phase             */
-/*  Print accuracy & execution time   */
+/*          Print accuracy            */
+/*          Execution time            */
 /*                                    */
 /**************************************/
 
