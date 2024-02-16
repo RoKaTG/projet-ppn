@@ -190,7 +190,7 @@ void squaredNormPrime(double *x, double *dx, int n) {
  * @param net A pointer to the MLP network.
  * @param netInput The input data for the network.
  */
-void backpropagate(MLP *net, double *netInput) {
+void backpropagate(MLP *net, double *netInput, double lambda) {
     int lastLayerIndex = net->numLayers - 2; // NOTE This used to be "-1".
 
     // NOTE Computing the cost was moved to the forward propagation
@@ -250,6 +250,10 @@ void backpropagate(MLP *net, double *netInput) {
         cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, K, N, net->learningRate, 
                     net->dOutputs[i], N, matprodInput, N, 1.0, net->weights[i], K);
 
+        for (int j = 0; j < M * K; j++) {
+            // NOTE we apply L2 regularization with weight decay
+            net->weights[i][j] -= lambda * net->weights[i][j] * net->learningRate;
+        }
         // Also, note how we perform the DGEMMs in this particular order, as we overwrite biases
 
         // Finally, set the prevInput to the current inputAdjoint
@@ -271,7 +275,7 @@ void backpropagate(MLP *net, double *netInput) {
  * @param input An array of inputs for training.
  * @param target An array of target outputs for training.
  */
-void trainMLP(MLP *net, int numEpochs, int numTrainingImages) {
+void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda) {
     // Paths to data files
     const char *imageFilePath = "data/train-images-idx3-ubyte";
     const char *labelFilePath = "data/train-labels-idx1-ubyte";
@@ -303,7 +307,7 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages) {
 
             // Forward and backward propagation
             feedforward(net, input, target);
-            backpropagate(net, input);
+            backpropagate(net, input, lambda);
         }
     }
 
@@ -356,7 +360,7 @@ double *predict(MLP *net, double *input) {
                 net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
             }
         }
-        
+
         // NOTE Set input for the next layer i+1
         layerInput = net->outputs[i];
     }
@@ -489,8 +493,9 @@ int main() {
 
     int numEpochs = 20; // Number of epoch
 
+    double lambda = 0.001;
     // Training cycle
-    trainMLP(net, numEpochs, numTrainingImages);
+    trainMLP(net, numEpochs, numTrainingImages, lambda);
 
     // Testing the network after the training session (same methodology)
 	float res = testMLP(net, numTestImages);
