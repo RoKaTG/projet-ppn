@@ -37,3 +37,37 @@ double sigmoidPrime(double x) {
     double sig = sigmoid(x);
     return sig * (1.0 - sig);
 }
+
+/**************************************/
+/*                                    */
+/*          Softmax's Function        */
+/*                                    */
+/**************************************/
+
+/**
+ * Apply the softmax function to the logits to compute probabilities.
+ * Softmax function normalizes the logits and converts them into probabilities.
+ * This prevents numerical stability issues.
+ *
+ * @param logits The input logits array.
+ * @param probabilities The output probabilities array.
+ * @param length The length of the logits and probabilities arrays.
+ */
+void softmax(double *logits, double *probabilities, int length) {
+    double max_logit = -INFINITY; // Search for the maximum logit
+    for (int i = 0; i < length; i++) {
+        if (logits[i] > max_logit) {
+            max_logit = logits[i];
+        }
+    }
+
+    double sum = 0.0;
+    for (int i = 0; i < length; i++) {
+        probabilities[i] = exp(logits[i] - max_logit); // Prevents numerical stability issues
+        sum += probabilities[i];
+    }
+    
+    for (int i = 0; i < length; i++) {
+        probabilities[i] /= sum;
+    }
+}
