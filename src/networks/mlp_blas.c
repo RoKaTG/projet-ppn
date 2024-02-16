@@ -128,16 +128,20 @@ int feedforward(MLP *net, double *input, double *expected) {
         cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
                     net->weights[i], K, layerInput, N, 0.0, net->matprod[i], N);
 
-        // Apply the activation function (sigmoid) to each element of net->outputs[i]
+        // Apply the activation function to each element of net->outputs[i] & apply softmax to the last layer
         // NOTE Don't forget to apply biases (we do it in the same loop)
         // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
         // This way, we will be performing only 1 function call (vs M currently)
-        for (int j = 0; j < M; j++) {
-            net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-            // NOTE Store activation function (sigmoid) derivative
-            net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
+        if (i == net->numLayers - 2) {
+            softmax(net->matprod[i], net->outputs[i], M);  
+            softmax(net->outputs[i], net->dOutputs[i], M); // NOTE The way we coded softmax make it that softmax = softmaxPrime so we store derivative this way
+        } else {
+            for (int j = 0; j < M; j++) {
+                net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+                // NOTE Store activation function (sigmoid) derivative
+                net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
+            }
         }
-
         // NOTE Set input for the next layer i+1
         layerInput = net->outputs[i];
     }
@@ -345,10 +349,14 @@ double *predict(MLP *net, double *input) {
         // NOTE Don't forget to apply biases (we do it in the same loop)
         // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
         // This way, we will be performing only 1 function call (vs M currently)
-        for (int j = 0; j < M; j++) {
-            net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+        if (i == net->numLayers - 2) {
+            softmax(net->matprod[i], net->outputs[i], M);
+        } else {
+            for (int j = 0; j < M; j++) {
+                net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+            }
         }
-
+        
         // NOTE Set input for the next layer i+1
         layerInput = net->outputs[i];
     }
