@@ -29,6 +29,10 @@ typedef struct {
     double dDeltas[10];
 
     double learningRate;
+
+    // NOTE We need gradient accumulators for batch processing
+    double **weightGradients;  // Accumulators for weight gradients
+    double **biasGradients;    // Accumulators for bias gradients
 } MLP;
 
 /**************************************/
@@ -74,3 +78,11 @@ double testMLP(MLP *net, int numTestImages);
 /**************************************/
 
 void free_mlp(MLP *net);
+
+/**************************************/
+/*                                    */
+/*           Batch headers            */
+/*                                    */
+/**************************************/
+
+void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda);
