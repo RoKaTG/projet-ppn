@@ -520,6 +520,58 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
     }
 }
 
+/**
+ * Train the MLP network using mini-batch gradient descent.
+ *
+ * @param net A pointer to the MLP network.
+ * @param numTrainingImages Total number of training images.
+ * @param batchSize Size of each mini-batch.
+ * @param numEpochs Number of epochs for training.
+ * @param lambda Regularization parameter for weight decay.
+ */
+void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, double lambda) {
+    const char *imagePath = "data/train-images-idx3-ubyte";
+    const char *labelPath = "data/train-labels-idx1-ubyte";
+
+    FILE *imageFile = fopen(imagePath, "rb");
+    FILE *labelFile = fopen(labelPath, "rb");
+
+    uint8_t *images = readMnistImages(imageFile, 0, numTrainingImages);
+    uint8_t *labels = readMnistLabels(labelFile, 0, numTrainingImages);
+
+    double *inputBatch[batchSize];
+    double *targetBatch[batchSize];
+
+    int numBatches = numTrainingImages / batchSize;
+
+    for (int epoch = 0; epoch < numEpochs; epoch++) {
+        for (int batch = 0; batch < numBatches; batch++) {
+            for (int i = 0; i < batchSize; i++) {
+                int imageIndex = batch * batchSize + i;
+                inputBatch[i] = (double *)malloc(784 * sizeof(double));
+                targetBatch[i] = (double *)calloc(10, sizeof(double));
+
+                for (int j = 0; j < 784; j++) {
+                    inputBatch[i][j] = images[imageIndex * 784 + j] / 255.0;
+                }
+                targetBatch[i][labels[imageIndex]] = 1.0;
+            }
+            batching(net, inputBatch, targetBatch, batchSize, lambda);
+
+            for (int i = 0; i < batchSize; i++) {
+                free(inputBatch[i]);
+                free(targetBatch[i]);
+            }
+        }
+        printf("Epoch %d/%d completed.\n", epoch + 1, numEpochs);
+    }
+
+    fclose(imageFile);
+    fclose(labelFile);
+    free(images);
+    free(labels);
+}
+
 /**************************************/
 /*                                    */
 /*         Memory management          */
@@ -578,6 +630,8 @@ int main() {
     int numTrainingImages = 60000;   // Training sample
 
     int numEpochs = 5; // Number of epoch
+
+    int batchSize = 8;
 
     double lambda = 0.001;
     // Training cycle
