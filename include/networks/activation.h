@@ -16,3 +16,11 @@ double sigmoidPrime(double x);
 /**************************************/
 
 void softmax(double *logits, double *probabilities, int length);
+
+/**************************************/
+/*                                    */
+/*          reLu's header             */
+/*                                    */
+/**************************************/
+
+double relu(double x);
