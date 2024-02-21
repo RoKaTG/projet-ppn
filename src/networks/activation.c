@@ -71,3 +71,19 @@ void softmax(double *logits, double *probabilities, int length) {
         probabilities[i] /= sum;
     }
 }
+
+/**************************************/
+/*                                    */
+/*          reLu's Function           */
+/*                                    */
+/**************************************/
+
+/**
+ * Rectified Linear Unit (ReLU) activation function.
+ *
+ * @param x Input value.
+ * @return Output value after applying ReLU activation.
+ */
+double relu(double x) {
+    return (x > 0) ? x : 0;
+}
