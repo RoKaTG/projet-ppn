@@ -87,3 +87,13 @@ void softmax(double *logits, double *probabilities, int length) {
 double relu(double x) {
     return (x > 0) ? x : 0;
 }
+
+/**
+ * Derivative of the Rectified Linear Unit (ReLU) activation function.
+ *
+ * @param x Input value.
+ * @return Derivative of the ReLU activation function at the given input.
+ */
+double reluPrime(double x) {
+    return (x > 0) ? 1 : 0;
+}
