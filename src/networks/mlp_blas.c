@@ -313,7 +313,7 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda) {
 
     // Training cycle
     for (int epoch = 0; epoch < numEpochs; epoch++) {
-        printf("Epoch %d/%d\n", epoch + 1, numEpochs);
+        printf("Epoch %d/%d completed using default routine.\n", epoch + 1, numEpochs);
         for (int i = 0; i < numTrainingImages; i++) {
             double input[784];
             double target[10] = {0};
@@ -563,7 +563,7 @@ void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, d
                 free(targetBatch[i]);
             }
         }
-        printf("Epoch %d/%d completed.\n", epoch + 1, numEpochs);
+        printf("Epoch %d/%d completed using mini batches routine.\n", epoch + 1, numEpochs);
     }
 
     fclose(imageFile);
@@ -619,7 +619,12 @@ void free_mlp(MLP *net) {
 /*                                    */
 /**************************************/
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage : %s [true/false] | ...\n", argv[0]);
+        return 1;
+    }
+
     // Network's initialization
     int layerSizes[] = {784, 300, 10}; // 1 hidden layer of size : 300
     double learningRate = 0.01; // Learning rate being set at 10^-2 (will be decaying in a future update)
@@ -627,15 +632,19 @@ int main() {
     MLP *net = create_mlp(numLayers, layerSizes, learningRate);
 
     int numTestImages = 10000;
-    int numTrainingImages = 60000;   // Training sample
+    int numTrainingImages = 500;   // Training sample
 
-    int numEpochs = 5; // Number of epoch
+    int numEpochs = 1; // Number of epoch
 
     int batchSize = 8;
 
     double lambda = 0.001;
+
+    bool routine = (strcmp(argv[1], "true") == 0) ? true : false;
+    
+    routine == true ? trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda) : trainMLP(net, numEpochs, numTrainingImages, lambda);
     // Training cycle
-    trainMLP(net, numEpochs, numTrainingImages, lambda);
+    //trainMLP(net, numEpochs, numTrainingImages, lambda);
 
     // Testing the network after the training session (same methodology)
 	float res = testMLP(net, numTestImages);
