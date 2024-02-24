@@ -621,6 +621,18 @@ void free_mlp(MLP *net) {
 /**************************************/
 
 int main(int argc, char *argv[]) {
+    if (strcmp(argv[1], "true") != 0 && strcmp(argv[1], "false") != 0) {
+        printf("Usage : %s [routine] [Topology] [Activation] [TrainingSample] [numEpoch] [batchSize]\n", argv[0]);
+        printf("                ^          ^         ^              ^                         ^         \n");
+        printf("                |          |         |              |                         |         \n");
+        printf("batch:true   ___|          |         |              |__=< 60000               |___only when routine:true\n");
+        printf("classic:false              |         |                                                  \n");
+        printf("                           |         |                                                  \n");
+        printf("Separate layers by ','_____|         |___ relu || sigmoid || soft                       \n");
+            
+        return 1;
+    }
+
     if (strcmp(argv[1], "true") == 0) {
         if (argc != 7) {
             printf("Usage : %s [routine] [Topology] [Activation] [TrainingSample] [numEpoch] [batchSize]\n", argv[0]);
@@ -669,11 +681,11 @@ int main(int argc, char *argv[]) {
         return 1;    
     }
 
-    int activaction;
+    int activation;
 
-    if (strcmp(func, "relu") == 0) activaction = 1;
-    if (strcmp(func, "sigmoid") == 0) activaction = 2;
-    if (strcmp(func, "tanh") == 0) activaction = 3;
+    if (strcmp(func, "relu") == 0) activation = 1;
+    if (strcmp(func, "sigmoid") == 0) activation = 2;
+    if (strcmp(func, "tanh") == 0) activation = 3;
 
     int numTrainingImages = atoi(argv[4]);
 
@@ -686,7 +698,6 @@ int main(int argc, char *argv[]) {
     //int numLayers = sizeof(layerSizes) / sizeof(layerSizes[0]);
 
     int numTestImages = 10000; 
-    int numTrainingImages = 500;   // Training sample
 
     int numEpochs = 1; // Number of epoch
 
