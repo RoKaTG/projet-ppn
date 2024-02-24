@@ -621,23 +621,39 @@ void free_mlp(MLP *net) {
 /**************************************/
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        printf("Usage : %s [routine] [Topology] [Activation]\n", argv[0]);
-        printf("                ^             ^         ^\n");
-        printf("                |             |         |\n");
-        printf("batch:true   ___|             |         |___ activationFunction : relu || sigmoid || soft \n");
-        printf("classic:false                 |           \n");
-        printf("                              |         |\n");
-        printf("Separate layers by ','________|           \n");
-        return 1;
+    if (strcmp(argv[1], "true") == 0) {
+        if (argc != 7) {
+            printf("Usage : %s [routine] [Topology] [Activation] [TrainingSample] [numEpoch] [batchSize]\n", argv[0]);
+            printf("                ^          ^         ^              ^                         ^         \n");
+            printf("                |          |         |              |                         |         \n");
+            printf("batch:true   ___|          |         |              |__=< 60000               |___ =< 64\n");
+            printf("classic:false              |         |                                                  \n");
+            printf("                           |         |                                                  \n");
+            printf("Separate layers by ','_____|         |___ relu || sigmoid || soft                       \n");
+            
+            return 1;
+        }
     }
 
-    // Network's initialization
-    //int layerSizes[] = {784, 300, 10}; // 1 hidden layer of size : 300
-    double learningRate = 0.01; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
-    //int numLayers = sizeof(layerSizes) / sizeof(layerSizes[0]);
-    int numLayers = 1;
+    if (strcmp(argv[1], "false") == 0) {
+        if (argc != 6) {
+            printf("Usage : %s [routine] [Topology] [Activation] [TrainingSample] [numEpoch]\n", argv[0]);
+            printf("                ^          ^         ^              ^                   \n");
+            printf("                |          |         |              |                   \n");
+            printf("batch:true   ___|          |         |              |__=< 60000         \n");
+            printf("classic:false              |         |                                  \n");
+            printf("                           |         |                                  \n");
+            printf("Separate layers by ','_____|         |___ relu || sigmoid || tanh       \n");
+            
+            return 1;
+        }
+    }
 
+    bool routine = (strcmp(argv[1], "true") == 0) ? true : false;
+
+    if (routine != false && routine !=true) printf("Error: You have to specify the training routine.\n");
+
+    int numLayers = 1;
     for (char *p = argv[2]; *p; p++) numLayers += (*p == ',');
     int *layerSizes = malloc(numLayers * sizeof(int));
     char *token = strtok(argv[2], ",");
@@ -645,6 +661,38 @@ int main(int argc, char *argv[]) {
         layerSizes[i] = atoi(token);
         token = strtok(NULL, ",");
     }
+
+    char *func = argv[3];
+
+    if (strcmp(func, "relu") != 0 && strcmp(func, "sigmoid") != 0 && strcmp(func, "tanh") != 0) {
+        printf("Error: The activaction function must be either relu OR sigmoid OR tanh.\n");
+        return 1;    
+    }
+
+    int activaction;
+
+    if (strcmp(func, "relu") == 0) activaction = 1;
+    if (strcmp(func, "sigmoid") == 0) activaction = 2;
+    if (strcmp(func, "tanh") == 0) activaction = 3;
+
+    int numTrainingImages = atoi(argv[4]);
+
+    if (numTrainingImages >= 60000) {
+        printf("Error: the training sample can't be superior to 60 000.\n");
+        return 1;
+    }
+
+    double learningRate = 0.01; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
+    //int numLayers = sizeof(layerSizes) / sizeof(layerSizes[0]);
+
+    int numTestImages = 10000; 
+    int numTrainingImages = 500;   // Training sample
+
+    int numEpochs = 1; // Number of epoch
+
+    int batchSize = 8;
+
+    double lambda = 0.001;
     
     // NOTE After filling layerSizes array from command line arguments
     if (layerSizes[0] != 784 || layerSizes[numLayers - 1] != 10) {
@@ -666,17 +714,6 @@ int main(int argc, char *argv[]) {
 
     
     MLP *net = create_mlp(numLayers, layerSizes, learningRate);
-
-    int numTestImages = 10000;
-    int numTrainingImages = 500;   // Training sample
-
-    int numEpochs = 1; // Number of epoch
-
-    int batchSize = 8;
-
-    double lambda = 0.001;
-
-    bool routine = (strcmp(argv[1], "true") == 0) ? true : false;
     
     routine == true ? trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda) : trainMLP(net, numEpochs, numTrainingImages, lambda);
     
