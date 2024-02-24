@@ -313,7 +313,6 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda) {
 
     // Training cycle
     for (int epoch = 0; epoch < numEpochs; epoch++) {
-        printf("Epoch %d/%d completed using default routine.\n", epoch + 1, numEpochs);
         for (int i = 0; i < numTrainingImages; i++) {
             double input[784];
             double target[10] = {0};
@@ -328,6 +327,7 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda) {
             feedforward(net, input, target);
             backpropagate(net, input, lambda);
         }
+        printf("Epoch %d/%d completed using default routine.\n", epoch + 1, numEpochs);
     }
 
     // Cleanup
@@ -429,6 +429,7 @@ double testMLP(MLP *net, int numTestImages) {
         if (predictedLabel == testLabels[i]) {
             correctPredictions++;
         }
+        /*
         // Printing the vector of prediction for each image
         printf("Prediction for image %d: [", i);
         for (int j = 0; j < 10; j++) {
@@ -438,7 +439,7 @@ double testMLP(MLP *net, int numTestImages) {
             if (j == 9) {
                 printf("%f] - Real Label: %d\n", output[j], testLabels[i]); 
             }
-        }
+        }*/
 
     }
     // Calculation of accuracy
@@ -620,15 +621,50 @@ void free_mlp(MLP *net) {
 /**************************************/
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        printf("Usage : %s [true/false] | ...\n", argv[0]);
+    if (argc != 3) {
+        printf("Usage : %s [routine] [Topology] [Activation]\n", argv[0]);
+        printf("                ^             ^         ^\n");
+        printf("                |             |         |\n");
+        printf("batch:true   ___|             |         |___ activationFunction : relu || sigmoid || soft \n");
+        printf("classic:false                 |           \n");
+        printf("                              |         |\n");
+        printf("Separate layers by ','________|           \n");
         return 1;
     }
 
     // Network's initialization
-    int layerSizes[] = {784, 300, 10}; // 1 hidden layer of size : 300
-    double learningRate = 0.01; // Learning rate being set at 10^-2 (will be decaying in a future update)
-    int numLayers = sizeof(layerSizes) / sizeof(layerSizes[0]);
+    //int layerSizes[] = {784, 300, 10}; // 1 hidden layer of size : 300
+    double learningRate = 0.01; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
+    //int numLayers = sizeof(layerSizes) / sizeof(layerSizes[0]);
+    int numLayers = 1;
+
+    for (char *p = argv[2]; *p; p++) numLayers += (*p == ',');
+    int *layerSizes = malloc(numLayers * sizeof(int));
+    char *token = strtok(argv[2], ",");
+    for (int i = 0; i < numLayers && token != NULL; i++) {
+        layerSizes[i] = atoi(token);
+        token = strtok(NULL, ",");
+    }
+    
+    // NOTE After filling layerSizes array from command line arguments
+    if (layerSizes[0] != 784 || layerSizes[numLayers - 1] != 10) {
+        printf("Error: The first layer size must be 784 and the last layer size must be 10.\n");
+        free(layerSizes);
+        return 1;
+    }
+
+    printf("Network topology:");
+    for (int i = 0; i < numLayers; i++) {
+        if (i < numLayers - 1) {
+            printf(" Layer %d: %d neurons |", i, layerSizes[i]);
+        } else {
+            printf(" Layer %d: %d neurons.", i, layerSizes[i]);
+        }
+    }
+
+    printf("\n\n");
+
+    
     MLP *net = create_mlp(numLayers, layerSizes, learningRate);
 
     int numTestImages = 10000;
@@ -643,9 +679,10 @@ int main(int argc, char *argv[]) {
     bool routine = (strcmp(argv[1], "true") == 0) ? true : false;
     
     routine == true ? trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda) : trainMLP(net, numEpochs, numTrainingImages, lambda);
+    
     // Training cycle
     //trainMLP(net, numEpochs, numTrainingImages, lambda);
-
+    printf("\n\n");
     // Testing the network after the training session (same methodology)
 	float res = testMLP(net, numTestImages);
     //Printing the MLP's accuracy
