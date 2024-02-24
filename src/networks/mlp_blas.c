@@ -674,10 +674,17 @@ int main(int argc, char *argv[]) {
         token = strtok(NULL, ",");
     }
 
+    // NOTE After filling layerSizes array from command line arguments
+    if (layerSizes[0] != 784 || layerSizes[numLayers - 1] != 10) {
+        printf("Error: The first layer size must be 784 and the last layer size must be 10.\n");
+        free(layerSizes);
+        return 1;
+    }
+
     char *func = argv[3];
 
     if (strcmp(func, "relu") != 0 && strcmp(func, "sigmoid") != 0 && strcmp(func, "tanh") != 0) {
-        printf("Error: The activaction function must be either relu OR sigmoid OR tanh.\n");
+        printf("Error: The activation function must be either relu OR sigmoid OR tanh.\n");
         return 1;    
     }
 
@@ -691,27 +698,30 @@ int main(int argc, char *argv[]) {
 
     if (numTrainingImages >= 60000) {
         printf("Error: the training sample can't be superior to 60 000.\n");
+       
+        return 1;
+    }
+
+    int numEpochs = atoi(argv[5]);
+
+    if (numEpochs >= 30) {
+        printf("Warning: The number of epochs exceeds 30, that may be time & ressource consuming.\n");
+    }
+
+    int batchSize = atoi(argv[5]);
+
+    if (numTrainingImages % batchSize != 0) {
+        printf("Error: Your batch's size has to be a divisor of your training sample.\n");
+
         return 1;
     }
 
     double learningRate = 0.01; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
-    //int numLayers = sizeof(layerSizes) / sizeof(layerSizes[0]);
 
     int numTestImages = 10000; 
 
-    int numEpochs = 1; // Number of epoch
-
-    int batchSize = 8;
-
     double lambda = 0.001;
     
-    // NOTE After filling layerSizes array from command line arguments
-    if (layerSizes[0] != 784 || layerSizes[numLayers - 1] != 10) {
-        printf("Error: The first layer size must be 784 and the last layer size must be 10.\n");
-        free(layerSizes);
-        return 1;
-    }
-
     printf("Network topology:");
     for (int i = 0; i < numLayers; i++) {
         if (i < numLayers - 1) {
