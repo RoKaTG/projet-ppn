@@ -126,10 +126,7 @@ double squaredNorm(double *x, int n) {
  * @param expected The expected output data for comparison.
  * @return The calculated error (delta) between the network's output and the expected output.
  */
-int feedforward(MLP *net, double *input, double *expected) {
-    //printf("Starting feedforward, checking pointers...\n");
-    //printf("net: %p, net->outputs[0]: %p\n", (void *)net, (void *)net->outputs[0]);
-
+int feedforward(MLP *net, double *input, double *expected, int activation) {
     // NOTE This will point to the current layer input. Note how we are not copying any memory.
     double *layerInput = input;
 
@@ -147,20 +144,43 @@ int feedforward(MLP *net, double *input, double *expected) {
         cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
                     net->weights[i], K, layerInput, N, 0.0, net->matprod[i], N);
 
-        // Apply the activation function to each element of net->outputs[i] & apply softmax to the last layer
+        // Apply the activation function to each element of net->outputs[i] & apply softmax || sigmoid to the last layer
         // NOTE Don't forget to apply biases (we do it in the same loop)
         // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
         // This way, we will be performing only 1 function call (vs M currently)
-        if (i == net->numLayers - 2) {
-            softmax(net->matprod[i], net->outputs[i], M);  
-            softmax(net->outputs[i], net->dOutputs[i], M); // NOTE The way we coded softmax make it that softmax = softmaxPrime so we store derivative this way
-        } else {
-            for (int j = 0; j < M; j++) {
+            if (activation == 1) {
+                if (i == net->numLayers - 2) {
+                    for (int j = 0; j < M; j++) {
+                        net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+                        net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
+                    }
+                } else {
+                    for (int j = 0; j < M; j++) {
+                        net->outputs[i][j] = relu(net->matprod[i][j] + net->biases[i][j]);   
+                        // NOTE Store activation function (relu) derivative
+                         net->dOutputs[i][j] = reluPrime(net->matprod[i][j] + net->biases[i][j]);
+                    }
+                }
+            }
+
+            if (activation == 2) {
+                if (i == net->numLayers - 2) {
+                    softmax(net->matprod[i], net->outputs[i], M);
+                    softmax(net->outputs[i], net->dOutputs[i], M); // NOTE The way we implemented softmax make it that
+                } else {                                           // softmax = softmaxPrime so we store derivative this way
+                    for (int j = 0; j < M; j++) {
+                        net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+                        // NOTE Store activation function (sigmoid) derivative
+                        net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
+                    }
+                }                                                
+            }
+
+            /*for (int j = 0; j < M; j++) {
                 net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
                 // NOTE Store activation function (sigmoid) derivative
                 net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
-            }
-        }
+            }*/
         // NOTE Set input for the next layer i+1
         layerInput = net->outputs[i];
     }
@@ -294,7 +314,7 @@ void backpropagate(MLP *net, double *netInput, double lambda) {
  * @param input An array of inputs for training.
  * @param target An array of target outputs for training.
  */
-void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda) {
+void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda, int activation) {
     // Paths to data files
     const char *imageFilePath = "data/train-images-idx3-ubyte";
     const char *labelFilePath = "data/train-labels-idx1-ubyte";
@@ -324,7 +344,7 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda) {
             target[labels[i]] = 1.0;
 
             // Forward and backward propagation
-            feedforward(net, input, target);
+            feedforward(net, input, target, activation);
             backpropagate(net, input, lambda);
         }
         printf("Epoch %d/%d completed using default routine.\n", epoch + 1, numEpochs);
@@ -346,7 +366,7 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda) {
  * @param input An array of inputs for prediction.
  * @return A pointer to the predicted output.
  */
-double *predict(MLP *net, double *input) {
+double *predict(MLP *net, double *input, int activation) {
     // NOTE Because we don't need to compute or store any partial derivatives during the 
     // prediction phase, The returned pointer will simply point to the last element of 
     // "outputs" in the MLP structure
@@ -372,11 +392,25 @@ double *predict(MLP *net, double *input) {
         // NOTE Don't forget to apply biases (we do it in the same loop)
         // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
         // This way, we will be performing only 1 function call (vs M currently)
-        if (i == net->numLayers - 2) {
-            softmax(net->matprod[i], net->outputs[i], M);
-        } else {
-            for (int j = 0; j < M; j++) {
-                net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+        if (activation == 1) {
+            if (i == net->numLayers - 2) {
+                for (int j = 0; j < M; j++) {
+                    net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+                }
+            } else {
+                for (int j = 0; j < M; j++) {
+                    net ->outputs[i][j] = relu(net->matprod[i][j] + net->biases[i][j]);
+                }
+            }
+        }
+
+        if (activation == 2) {
+            if (i == net->numLayers - 2) {
+                softmax(net->matprod[i], net->outputs[i], M);
+            } else {
+                for (int j = 0; j < M; j++) {
+                    net ->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
+                }
             }
         }
 
@@ -384,7 +418,7 @@ double *predict(MLP *net, double *input) {
         layerInput = net->outputs[i];
     }
 
-    // NOTE From here, layerInput actually points to the last layer output -> we'll reuse it to compute 
+    // NOTE From here, layerInput points to the last layer output -> we'll re-use it to compute 
     // the network's delta and the error's norm
     double *netOutput = layerInput;
     return netOutput;
@@ -398,7 +432,7 @@ double *predict(MLP *net, double *input) {
  * @param numTestImages Number of test images to evaluate.
  * @return The accuracy of the network's predictions on the test dataset.
  */
-double testMLP(MLP *net, int numTestImages) {
+double testMLP(MLP *net, int numTestImages, int activation) {
     FILE *testImageFile = fopen("data/t10k-images-idx3-ubyte", "rb");
     FILE *testLabelFile = fopen("data/t10k-labels-idx1-ubyte", "rb");
     uint8_t *testImages = readMnistImages(testImageFile, 0, numTestImages);
@@ -414,7 +448,7 @@ double testMLP(MLP *net, int numTestImages) {
             input[j] = testImages[i * 784 + j] / 255.0;
         }
 
-        output = predict(net,input);
+        output = predict(net,input, activation);
 
         // Comparing label's prediction & ideal label
         int predictedLabel = 0;
@@ -459,7 +493,7 @@ double testMLP(MLP *net, int numTestImages) {
 /*                                       */
 /*****************************************/
 
-void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda) {
+void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda, int activation) {
     // Reset gradient accumulators to zero for weights and biases
     for (int i = 0; i < net->numLayers - 1; i++) {
         memset(net->weightGradients[i], 0, net->layerSizes[i + 1] * net->layerSizes[i] * sizeof(double));
@@ -468,17 +502,17 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
 
     // Accumulate gradients for each input in the batch
     for (int b = 0; b < batchSize; b++) {
-        // Feedforward to compute outputs and derivative outputs, but do not modify weights/biases
-        feedforward(net, inputs[b], targets[b]);  // Assuming modification to store intermediate derivatives
+        // NOTE We can use the feedforward to compute outputs and derivative outputs because we compute them in here to ease the batching process
+        feedforward(net, inputs[b], targets[b], activation); 
 
-        // Backpropagate errors and accumulate gradients without updating weights and biases
+        // NOTE We do a backpropagate & use the errors and accumulate gradients but without updating weights and biases
         double *prevDelta = calloc(net->layerSizes[net->numLayers - 1], sizeof(double));
         for (int i = net->numLayers - 2; i >= 0; i--) {
             int M = net->layerSizes[i + 1];
             int N = net->layerSizes[i];
             double *delta = calloc(M, sizeof(double));
 
-            // Calculate delta for current layer
+            // Compute delta for current layer
             if (i == net->numLayers - 2) { // Output layer
                 for (int j = 0; j < M; j++) {
                     delta[j] = (net->outputs[i][j] - targets[b][j]) * net->dOutputs[i][j];
@@ -495,9 +529,9 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
 
             // Accumulate gradients for weights and biases
             for (int j = 0; j < M; j++) {
-                net->biasGradients[i][j] += delta[j]; // Accumulate bias gradient
+                net->biasGradients[i][j] += delta[j]; // NOTE  We accumulate bias gradient this way
                 for (int k = 0; k < N; k++) {
-                    net->weightGradients[i][j * N + k] += delta[j] * (i > 0 ? net->outputs[i - 1][k] : inputs[b][k]); // Accumulate weight gradient
+                    net->weightGradients[i][j * N + k] += delta[j] * (i > 0 ? net->outputs[i - 1][k] : inputs[b][k]); // NOTE This way is a bit complicated but is more efficent for weight gradient
                 }
             }
 
@@ -530,7 +564,7 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
  * @param numEpochs Number of epochs for training.
  * @param lambda Regularization parameter for weight decay.
  */
-void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, double lambda) {
+void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, double lambda, int activation) {
     const char *imagePath = "data/train-images-idx3-ubyte";
     const char *labelPath = "data/train-labels-idx1-ubyte";
 
@@ -557,7 +591,7 @@ void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, d
                 }
                 targetBatch[i][labels[imageIndex]] = 1.0;
             }
-            batching(net, inputBatch, targetBatch, batchSize, lambda);
+            batching(net, inputBatch, targetBatch, batchSize, lambda, activation);
 
             for (int i = 0; i < batchSize; i++) {
                 free(inputBatch[i]);
@@ -615,13 +649,12 @@ void free_mlp(MLP *net) {
 /*          Initialization            */
 /*          Training phase            */
 /*          Testing phase             */
-/*          Print accuracy            */
-/*          Execution time            */
+/*          Benchmarking              */
 /*                                    */
 /**************************************/
 
 int main(int argc, char *argv[]) {
-    if (strcmp(argv[1], "true") != 0 && strcmp(argv[1], "false") != 0) {
+    if (argc < 2 || (strcmp(argv[1], "true") != 0 && strcmp(argv[1], "false") != 0)) {
         printf("Usage : %s [routine] [Topology] [Activation] [TrainingSample] [numEpoch] [batchSize]\n", argv[0]);
         printf("                ^          ^         ^              ^                         ^         \n");
         printf("                |          |         |              |                         |         \n");
@@ -685,6 +718,7 @@ int main(int argc, char *argv[]) {
 
     if (strcmp(func, "relu") != 0 && strcmp(func, "sigmoid") != 0 && strcmp(func, "tanh") != 0) {
         printf("Error: The activation function must be either relu OR sigmoid OR tanh.\n");
+        
         return 1;    
     }
 
@@ -696,7 +730,7 @@ int main(int argc, char *argv[]) {
 
     int numTrainingImages = atoi(argv[4]);
 
-    if (numTrainingImages >= 60000) {
+    if (numTrainingImages > 60000) {
         printf("Error: the training sample can't be superior to 60 000.\n");
        
         return 1;
@@ -708,13 +742,13 @@ int main(int argc, char *argv[]) {
         printf("Warning: The number of epochs exceeds 30, that may be time & ressource consuming.\n");
     }
 
-    int batchSize = atoi(argv[5]);
+    int batchSize;// = atoi(argv[6]);
 
-    if (numTrainingImages % batchSize != 0) {
+    /*if (numTrainingImages % batchSize != 0) {
         printf("Error: Your batch's size has to be a divisor of your training sample.\n");
 
         return 1;
-    }
+    }*/
 
     double learningRate = 0.01; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
 
@@ -736,15 +770,28 @@ int main(int argc, char *argv[]) {
     
     MLP *net = create_mlp(numLayers, layerSizes, learningRate);
     
-    routine == true ? trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda) : trainMLP(net, numEpochs, numTrainingImages, lambda);
+    if (routine == true) {
+        batchSize = atoi(argv[6]);
+        if (numTrainingImages % batchSize != 0) {
+            printf("Error: Your batch's size has to be a divisor of your training sample.\n");
+
+            return 1;
+        }
+
+        trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda, activation);
+    } else {
+        trainMLP(net, numEpochs, numTrainingImages, lambda, activation);
+    }
+
+    //routine == true ? batchSize = atoi(argv[6]); trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda, activation) : trainMLP(net, numEpochs, numTrainingImages, lambda, activation);
     
     // Training cycle
     //trainMLP(net, numEpochs, numTrainingImages, lambda);
     printf("\n\n");
     // Testing the network after the training session (same methodology)
-	float res = testMLP(net, numTestImages);
+	float res = testMLP(net, numTestImages, activation);
     //Printing the MLP's accuracy
-    printf("Précision: %.2f%%\n", res);
+    printf("Accuracy: %.2f%%\n", res);
 
     free_mlp(net);
 
