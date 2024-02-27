@@ -50,7 +50,7 @@ MLP* network_create(int numLayers, int *layerSizes, double learningRate);
 /**************************************/
 
 double squaredNorm(double *x, int n);
-int feedforward(MLP *net, double *input, double *target);
+int feedforward(MLP *net, double *input, double *target, int activation);
 
 /**************************************/
 /*                                    */
@@ -67,9 +67,9 @@ void backpropagate(MLP *net, double *netInput, double lambda);
 /*                                                 */
 /***************************************************/
 
-double *predict(MLP *net, double *input);
-void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda);
-double testMLP(MLP *net, int numTestImages);
+double *predict(MLP *net, double *input, int activation);
+void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda, int activation);
+double testMLP(MLP *net, int numTestImages, int activation);
 
 /**************************************/
 /*                                    */
@@ -85,5 +85,5 @@ void free_mlp(MLP *net);
 /*                                    */
 /**************************************/
 
-void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda);
-void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, double lambda);
+void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda, int activation);
+void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, double lambda, int activation);
