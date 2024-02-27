@@ -25,3 +25,9 @@ void softmax(double *logits, double *probabilities, int length);
 
 double relu(double x);
 double reluPrime(double x);
+
+/**************************************/
+/*                                    */
+/*          tanh's header             */
+/*                                    */
+/**************************************/
