@@ -97,3 +97,9 @@ double relu(double x) {
 double reluPrime(double x) {
     return (x > 0) ? 1 : 0;
 }
+
+/**************************************/
+/*                                    */
+/*          tanh's Function           */
+/*                                    */
+/**************************************/
