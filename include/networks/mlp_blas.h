@@ -41,7 +41,7 @@ typedef struct {
 /*                                    */
 /**************************************/
 
-MLP* network_create(int numLayers, int *layerSizes, double learningRate);
+MLP* create_mlp(int numLayers, int *layerSizes, double learningRate);
 
 /**************************************/
 /*                                    */
