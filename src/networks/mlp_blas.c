@@ -6,6 +6,7 @@
 #include <time.h>
 #include <string.h>
 #include <stdint.h>
+#include <omp.h>
 
 #include "../../include/networks/mlp_blas.h"
 #include "../../include/networks/activation.h"
@@ -331,8 +332,11 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda, int
     uint8_t *images = readMnistImages(imageFile, 0, numTrainingImages);
     uint8_t *labels = readMnistLabels(labelFile, 0, numTrainingImages);
 
+    double start_t, end_t, exec_t;
+    double mean_t;
     // Training cycle
     for (int epoch = 0; epoch < numEpochs; epoch++) {
+        start_t = omp_get_wtime();
         for (int i = 0; i < numTrainingImages; i++) {
             double input[784];
             double target[10] = {0};
@@ -347,8 +351,13 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda, int
             feedforward(net, input, target, activation);
             backpropagate(net, input, lambda);
         }
-        printf("Epoch %d/%d completed using default routine.\n", epoch + 1, numEpochs);
+        end_t = omp_get_wtime();
+        exec_t = end_t - start_t;
+        mean_t = (mean_t + exec_t);
+        printf("Epoch %d/%d completed using default routine in %lfs.\n", epoch + 1, numEpochs, exec_t);
     }
+    
+    printf("\nMean execution time per epochs: %lfs",mean_t / numEpochs);
 
     // Cleanup
     fclose(imageFile);
@@ -641,159 +650,4 @@ void free_mlp(MLP *net) {
         free(net->layerSizes);
         free(net);
     }
-}
-
-/**************************************/
-/*                                    */
-/*       Main function used for       */
-/*          Initialization            */
-/*          Training phase            */
-/*          Testing phase             */
-/*          Benchmarking              */
-/*                                    */
-/**************************************/
-
-int main(int argc, char *argv[]) {
-    if (argc < 2 || (strcmp(argv[1], "true") != 0 && strcmp(argv[1], "false") != 0)) {
-        printf("Usage : %s [routine] [Topology] [Activation] [TrainingSample] [numEpoch] [batchSize]\n", argv[0]);
-        printf("                ^          ^         ^              ^                         ^         \n");
-        printf("                |          |         |              |                         |         \n");
-        printf("batch:true   ___|          |         |              |__=< 60000               |___only when routine:true\n");
-        printf("classic:false              |         |                                                  \n");
-        printf("                           |         |                                                  \n");
-        printf("Separate layers by ','_____|         |___ relu || sigmoid || soft                       \n");
-            
-        return 1;
-    }
-
-    if (strcmp(argv[1], "true") == 0) {
-        if (argc != 7) {
-            printf("Usage : %s [routine] [Topology] [Activation] [TrainingSample] [numEpoch] [batchSize]\n", argv[0]);
-            printf("                ^          ^         ^              ^                         ^         \n");
-            printf("                |          |         |              |                         |         \n");
-            printf("batch:true   ___|          |         |              |__=< 60000               |___ =< 64\n");
-            printf("classic:false              |         |                                                  \n");
-            printf("                           |         |                                                  \n");
-            printf("Separate layers by ','_____|         |___ relu || sigmoid || soft                       \n");
-            
-            return 1;
-        }
-    }
-
-    if (strcmp(argv[1], "false") == 0) {
-        if (argc != 6) {
-            printf("Usage : %s [routine] [Topology] [Activation] [TrainingSample] [numEpoch]\n", argv[0]);
-            printf("                ^          ^         ^              ^                   \n");
-            printf("                |          |         |              |                   \n");
-            printf("batch:true   ___|          |         |              |__=< 60000         \n");
-            printf("classic:false              |         |                                  \n");
-            printf("                           |         |                                  \n");
-            printf("Separate layers by ','_____|         |___ relu || sigmoid || tanh       \n");
-            
-            return 1;
-        }
-    }
-
-    bool routine = (strcmp(argv[1], "true") == 0) ? true : false;
-
-    if (routine != false && routine !=true) printf("Error: You have to specify the training routine.\n");
-
-    int numLayers = 1;
-    for (char *p = argv[2]; *p; p++) numLayers += (*p == ',');
-    int *layerSizes = malloc(numLayers * sizeof(int));
-    char *token = strtok(argv[2], ",");
-    for (int i = 0; i < numLayers && token != NULL; i++) {
-        layerSizes[i] = atoi(token);
-        token = strtok(NULL, ",");
-    }
-
-    // NOTE After filling layerSizes array from command line arguments
-    if (layerSizes[0] != 784 || layerSizes[numLayers - 1] != 10) {
-        printf("Error: The first layer size must be 784 and the last layer size must be 10.\n");
-        free(layerSizes);
-        return 1;
-    }
-
-    char *func = argv[3];
-
-    if (strcmp(func, "relu") != 0 && strcmp(func, "sigmoid") != 0 && strcmp(func, "tanh") != 0) {
-        printf("Error: The activation function must be either relu OR sigmoid OR tanh.\n");
-        
-        return 1;    
-    }
-
-    int activation;
-
-    if (strcmp(func, "relu") == 0) activation = 1;
-    if (strcmp(func, "sigmoid") == 0) activation = 2;
-    if (strcmp(func, "tanh") == 0) activation = 3;
-
-    int numTrainingImages = atoi(argv[4]);
-
-    if (numTrainingImages > 60000) {
-        printf("Error: the training sample can't be superior to 60 000.\n");
-       
-        return 1;
-    }
-
-    int numEpochs = atoi(argv[5]);
-
-    if (numEpochs >= 30) {
-        printf("Warning: The number of epochs exceeds 30, that may be time & ressource consuming.\n");
-    }
-
-    int batchSize;// = atoi(argv[6]);
-
-    /*if (numTrainingImages % batchSize != 0) {
-        printf("Error: Your batch's size has to be a divisor of your training sample.\n");
-
-        return 1;
-    }*/
-
-    double learningRate = 0.01; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
-
-    int numTestImages = 10000; 
-
-    double lambda = 0.001;
-    
-    printf("Network topology:");
-    for (int i = 0; i < numLayers; i++) {
-        if (i < numLayers - 1) {
-            printf(" Layer %d: %d neurons |", i, layerSizes[i]);
-        } else {
-            printf(" Layer %d: %d neurons.", i, layerSizes[i]);
-        }
-    }
-
-    printf("\n\n");
-
-    
-    MLP *net = create_mlp(numLayers, layerSizes, learningRate);
-    
-    if (routine == true) {
-        batchSize = atoi(argv[6]);
-        if (numTrainingImages % batchSize != 0) {
-            printf("Error: Your batch's size has to be a divisor of your training sample.\n");
-
-            return 1;
-        }
-
-        trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda, activation);
-    } else {
-        trainMLP(net, numEpochs, numTrainingImages, lambda, activation);
-    }
-
-    //routine == true ? batchSize = atoi(argv[6]); trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda, activation) : trainMLP(net, numEpochs, numTrainingImages, lambda, activation);
-    
-    // Training cycle
-    //trainMLP(net, numEpochs, numTrainingImages, lambda);
-    printf("\n\n");
-    // Testing the network after the training session (same methodology)
-	float res = testMLP(net, numTestImages, activation);
-    //Printing the MLP's accuracy
-    printf("Accuracy: %.2f%%\n", res);
-
-    free_mlp(net);
-
-    return 0;
 }
