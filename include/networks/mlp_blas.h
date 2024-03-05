@@ -88,4 +88,4 @@ void free_mlp(MLP *net);
 /**************************************/
 
 void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda, int activation);
-void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, double lambda, int activation);
+void trainBatch(MLP *net, Benchmark *result, int numTrainingImages, int batchSize, int numEpochs, double lambda, int activation);

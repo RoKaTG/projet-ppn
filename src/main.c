@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
         printf("Warning: The number of epochs exceeds 30, that may be time & ressource consuming.\n");
     }
 
-    int batchSize;// = atoi(argv[6]);
+    int batchSize; // = atoi(argv[6]);
 
     double learningRate = 0.01; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
 
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         start_t = omp_get_wtime();
-        trainBatch(net, numTrainingImages, batchSize, numEpochs, lambda, activation);
+        trainBatch(net, &result, numTrainingImages, batchSize, numEpochs, lambda, activation);
         finish_t = omp_get_wtime();
     } else {
         start_t = omp_get_wtime();
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
     strcpy(topologyStr, "");
 
     for(int i = 0; i < numLayers; i++) {
-        char layerSizeStr[20]; // Pour convertir la taille de la couche en chaîne
+        char layerSizeStr[20]; // Parsing our topology to a char for printing purposes
         sprintf(layerSizeStr, "%d", layerSizes[i]);
         strcat(topologyStr, layerSizeStr);
 

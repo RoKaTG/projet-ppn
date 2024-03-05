@@ -334,9 +334,7 @@ void trainMLP(MLP *net, Benchmark *result, int numEpochs, int numTrainingImages,
     uint8_t *labels = readMnistLabels(labelFile, 0, numTrainingImages);
 
     double start_t, end_t, exec_t;
-    //double mean_t;
 
-    //Benchmark result;
     double totalExecTime = 0.0;
 
     // Training cycle
@@ -361,8 +359,7 @@ void trainMLP(MLP *net, Benchmark *result, int numEpochs, int numTrainingImages,
         totalExecTime += exec_t;
         printf("Epoch %d/%d completed using default routine in %lfs.\n", epoch + 1, numEpochs, exec_t);
     }
-    result->avgEpochTime = totalExecTime / numEpochs; // Calcul de la moyenne
-    //printf("\nMean execution time per epochs: %lfs",mean_t / numEpochs);
+    result->avgEpochTime = totalExecTime / numEpochs; // Computing the mean time execution
 
     // Cleanup
     fclose(imageFile);
@@ -578,7 +575,7 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
  * @param numEpochs Number of epochs for training.
  * @param lambda Regularization parameter for weight decay.
  */
-void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, double lambda, int activation) {
+void trainBatch(MLP *net, Benchmark *result, int numTrainingImages, int batchSize, int numEpochs, double lambda, int activation) {
     const char *imagePath = "data/train-images-idx3-ubyte";
     const char *labelPath = "data/train-labels-idx1-ubyte";
 
@@ -593,7 +590,12 @@ void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, d
 
     int numBatches = numTrainingImages / batchSize;
 
+    double start_t, end_t, exec_t;
+
+    double totalExecTime = 0.0;
+
     for (int epoch = 0; epoch < numEpochs; epoch++) {
+        start_t = omp_get_wtime();
         for (int batch = 0; batch < numBatches; batch++) {
             for (int i = 0; i < batchSize; i++) {
                 int imageIndex = batch * batchSize + i;
@@ -612,8 +614,12 @@ void trainBatch(MLP *net, int numTrainingImages, int batchSize, int numEpochs, d
                 free(targetBatch[i]);
             }
         }
-        printf("Epoch %d/%d completed using mini batches routine.\n", epoch + 1, numEpochs);
+        end_t = omp_get_wtime();
+        exec_t = end_t - start_t;
+        totalExecTime += exec_t;
+        printf("Epoch %d/%d completed using mini batches routine in %lfs.\n", epoch + 1, numEpochs, exec_t);
     }
+    result->avgEpochTime = totalExecTime / numEpochs; // Computing the mean time execution
 
     fclose(imageFile);
     fclose(labelFile);

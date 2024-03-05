@@ -1,12 +1,12 @@
 #pragma once
 
 typedef struct {
-    char* routine; // "batch" ou "default"
-    char* topology; // Par exemple, "784,128,10"
-    char* actFunction; // "relu", "sigmoid", ou "tanh"
+    char* routine; 
+    char* topology; 
+    char* actFunction; 
     int trainingImages;
     int epochs;
-    int batchSize; // -1 si non applicable
+    int batchSize;
     float precision;
     double totalTime;
     double avgEpochTime;
