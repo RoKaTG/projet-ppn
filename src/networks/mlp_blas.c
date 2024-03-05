@@ -11,6 +11,7 @@
 #include "../../include/networks/mlp_blas.h"
 #include "../../include/networks/activation.h"
 #include "../../include/mnist_reader/mnist_reader.h"
+#include "../../include/benchmark/bench.h"
  
 /**************************************/
 /*                                    */
@@ -315,7 +316,7 @@ void backpropagate(MLP *net, double *netInput, double lambda) {
  * @param input An array of inputs for training.
  * @param target An array of target outputs for training.
  */
-void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda, int activation) {
+void trainMLP(MLP *net, Benchmark *result, int numEpochs, int numTrainingImages, double lambda, int activation) {
     // Paths to data files
     const char *imageFilePath = "data/train-images-idx3-ubyte";
     const char *labelFilePath = "data/train-labels-idx1-ubyte";
@@ -333,7 +334,11 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda, int
     uint8_t *labels = readMnistLabels(labelFile, 0, numTrainingImages);
 
     double start_t, end_t, exec_t;
-    double mean_t;
+    //double mean_t;
+
+    //Benchmark result;
+    double totalExecTime = 0.0;
+
     // Training cycle
     for (int epoch = 0; epoch < numEpochs; epoch++) {
         start_t = omp_get_wtime();
@@ -353,11 +358,11 @@ void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda, int
         }
         end_t = omp_get_wtime();
         exec_t = end_t - start_t;
-        mean_t = (mean_t + exec_t);
+        totalExecTime += exec_t;
         printf("Epoch %d/%d completed using default routine in %lfs.\n", epoch + 1, numEpochs, exec_t);
     }
-    
-    printf("\nMean execution time per epochs: %lfs",mean_t / numEpochs);
+    result->avgEpochTime = totalExecTime / numEpochs; // Calcul de la moyenne
+    //printf("\nMean execution time per epochs: %lfs",mean_t / numEpochs);
 
     // Cleanup
     fclose(imageFile);
