@@ -11,6 +11,7 @@
 #include "../include/networks/mlp_blas.h"
 #include "../include/networks/activation.h"
 #include "../include/mnist_reader/mnist_reader.h"
+#include "../include/benchmark/bench.h"
  
 /**************************************/
 /*                                    */
@@ -64,6 +65,7 @@ int main(int argc, char *argv[]) {
     }
 
     double start_t, finish_t, exec_t;
+    Benchmark result;
 
     bool routine = (strcmp(argv[1], "true") == 0) ? true : false;
 
@@ -147,7 +149,7 @@ int main(int argc, char *argv[]) {
         finish_t = omp_get_wtime();
     } else {
         start_t = omp_get_wtime();
-        trainMLP(net, numEpochs, numTrainingImages, lambda, activation);
+        trainMLP(net, &result, numEpochs, numTrainingImages, lambda, activation);
         finish_t = omp_get_wtime();
     }
 
@@ -159,6 +161,35 @@ int main(int argc, char *argv[]) {
     //Printing the MLP's accuracy & time execution
     printf("Time execution: %lfs\n", exec_t);
     printf("Accuracy: %.2f%% | Loss: %.2f%%\n", res, 100 - res);
+
+    char* topologyStr = malloc(1024 * sizeof(char));
+    strcpy(topologyStr, "");
+
+    for(int i = 0; i < numLayers; i++) {
+        char layerSizeStr[20]; // Pour convertir la taille de la couche en chaîne
+        sprintf(layerSizeStr, "%d", layerSizes[i]);
+        strcat(topologyStr, layerSizeStr);
+
+        if (i < numLayers - 1) {
+            strcat(topologyStr, ",");
+        }
+    }
+
+    result.routine = routine ? "batch" : "default";
+    result.actFunction = func;
+    result.topology = topologyStr;
+    result.trainingImages = numTrainingImages;
+    result.epochs = numEpochs;
+    result.batchSize = routine ? batchSize : -1;
+    result.precision = res;
+    result.totalTime = exec_t;
+    result.errorRate = 100.0f - res;
+
+    printf("%-10s %-20s %-10s %-20s %-10s %-15s %-15s %-20s %-20s %-15s\n", 
+        "Routine", "Topology", "Act Func", "Training Images", "Epochs", 
+        "Batch Size", "Precision (%)", "Total Time (s)", "Avg Epoch Time (s)", "Error Rate (%)");
+
+    printBenchmarkResult(&result);
 
     free_mlp(net);
 
