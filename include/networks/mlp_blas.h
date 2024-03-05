@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../benchmark/bench.h"
+
 /**************************************/
 /*                                    */
 /*          Network stucture          */
@@ -68,7 +70,7 @@ void backpropagate(MLP *net, double *netInput, double lambda);
 /***************************************************/
 
 double *predict(MLP *net, double *input, int activation);
-void trainMLP(MLP *net, int numEpochs, int numTrainingImages, double lambda, int activation);
+void trainMLP(MLP *net, Benchmark *result, int numEpochs, int numTrainingImages, double lambda, int activation);
 double testMLP(MLP *net, int numTestImages, int activation);
 
 /**************************************/
