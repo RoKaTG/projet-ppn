@@ -132,10 +132,26 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
  * @return The squared norm of the vector.
  */
 double squaredNorm(double *x, int n) {
-    double sum = 0.;
-    for(int i=0; i<n; i++) {
-        sum += x[i] * x[i];
+    double sum = 0.0;
+    __m256d sum_vec = _mm256_setzero_pd();
+    int i = 0;
+
+    // NOTE: Process 4 elements of our data at once
+    for (i = 0; i <= n - 4; i += 4) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);
+        sum_vec = _mm256_add_pd(sum_vec, _mm256_mul_pd(x_vec, x_vec));
     }
+
+    // NOTE: Reduce vector sum to scalar sum
+    double sum_array[4];
+    _mm256_storeu_pd(sum_array, sum_vec);
+    sum = sum_array[0] + sum_array[1] + sum_array[2] + sum_array[3];
+
+    // NOTE: We need to process any remaining elements
+    for (int j = i; j < n; j++) {
+        sum += x[j] * x[j];
+    }
+
     return sum;
 }
 
