@@ -277,13 +277,56 @@ void backpropagate(MLP *net, double *netInput, double lambda) {
     // Propagate the error backward through the previous layers and update the weights and biases
     // NOTE i>= is important here, to make sure we visit the last layer
     double *prevInput = &(net->dDeltas[0]);
+
+    const  MKL_INT group_count = 1;
+    MKL_INT m[1], n[1], k[1];
+    MKL_INT lda[1], ldb[1], ldc[1], 
+            lda2[1], ldb2[1], ldc2[1];
+
+    CBLAS_TRANSPOSE transA[1], transB[1];
+
+    double alpha[1], beta[1], 
+           beta2[1], alpha2[1];
+
+    const double *a[1], *b[1],
+                 *a2[1], *b2[1];
+    double *c[1], *c2[1];
+    int group_size[1] = {1};
+
     for (int i = lastLayerIndex; i >= 0; i--) {
         int layerSize = net->layerSizes[i + 1];
-
         int M = net->layerSizes[i + 1];     // Number of rows in the weight matrix (and output size)
-        int N = 1;                        // Since the input is a vector
-        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+        int N = 1;                          // Since the input is a vector
+        int K = net->layerSizes[i];         // Number of columns in the weight matrix (and input size)
 
+        m[0] = net->layerSizes[i + 1];      // Number of rows in the weight matrix (and output size)
+        n[0] = 1;                           // Since the input is a vector
+        k[0] = net->layerSizes[i];          // Number of columns in the weight matrix (and input size)
+        lda[0] = k[0];
+        ldb[0] = n[0];
+        ldc[0] = n[0];
+
+        lda2[0] = n[0];
+        ldb2[0] = n[0];
+        ldc2[0] = k[0];
+
+	    transA[0] = CblasTrans;
+        transB[0] = CblasNoTrans;
+
+        alpha[0] = 1.0;
+        beta[0] = 0.0;
+
+        alpha2[0] = net->learningRate;
+	    beta2[0] = 1.0;
+
+        a[0] = net->weights[i];
+        b[0] = net->dOutputs[i];
+        c[0] = net->inputAdjoints[i];
+
+        a2[0] = net->dOutputs[i];
+        c2[0] = net->weights[i];
+	    //d[0] = matprodInput;
+        
         // plusbar = plusdot * lk+1bar (lk+1bar denotes the last output adkoint, prevInput in the code)
         for (int j = 0; j < layerSize; j++) {
             // NOTE We can overwrite dOutputs as we will not need it anymore.
@@ -302,9 +345,8 @@ void backpropagate(MLP *net, double *netInput, double lambda) {
         // lkbar = lkdot * timesbar; This is one of the matprod special cases.
         // We will compute the current layer input (= the previous layer output)
         // This will be used to continue backprop for the previous layer
-        cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, K, N, M, 1.0, 
-                    net->weights[i], K, net->dOutputs[i], N, 0.0, net->inputAdjoints[i], N);
-
+        cblas_dgemm_batch(CblasRowMajor, transA, transB, k, n, m, alpha, a, lda, b, ldb, beta, c, ldc, group_count, group_size);
+        
         // wbar = wdot * timesbar; This is one of the matprod special cases.
         // We'll compute the matprod between the previous output's transpose and timesbar
         // We will directly apply the correction using the DGEMM 
@@ -318,8 +360,12 @@ void backpropagate(MLP *net, double *netInput, double lambda) {
             // It will actually be the network's output
             matprodInput = netInput;
         }
+        
+        b2[0] = matprodInput;
+        
         cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, K, N, net->learningRate, 
                     net->dOutputs[i], N, matprodInput, N, 1.0, net->weights[i], K);
+     	//cblas_dgemm_batch(CblasRowMajor, transB, transA, m, k, n, alpha2, a, lda2, b, ldb2, beta2, c, ldc2, group_count, group_size);
 
         for (int j = 0; j < M * K; j++) {
             // NOTE we apply L2 regularization with weight decay
