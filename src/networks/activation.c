@@ -144,3 +144,14 @@ double reluPrime(double x) {
 /*          tanh's Function           */
 /*                                    */
 /**************************************/
+
+/**
+ * Hyperbolic tangent function.
+ * Computes the hyperbolic tangent of a given double-precision floating-point number.
+ *
+ * @param x The input value.
+ * @return The hyperbolic tangent of x.
+ */
+double tanhh(double x) {
+    return tanh(x);
+}
