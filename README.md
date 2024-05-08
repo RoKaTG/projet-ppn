@@ -19,6 +19,8 @@ Make sure you have the following installed on your system before getting started
 1. Run the command line : 
 ```bash
 chmod +x script/get-mnist.sh
+cd script
+./get-mnist.sh
 ``````
  to grant execution rights to the MNIST dataset download script and to download by execution of the script the dataset. /!\ Do not rerun to avoid deleting already downloaded data & lose time/space
 
@@ -47,18 +49,21 @@ cd ..
 
 2. The mlp need 5 to 6 arguments in total, here is a general execution : 
 ```bash
-./mlp [routine:false OR true] [topology:784,size_of_all_hidden_layer_separated_by_coma,10] [activation:relu OR sigmoid OR fast_sigmoid OR leaky OR swish OR tanh] [numEpoch:int] [batchSize:int (only if routine:true)]
+./mlp [routine:false OR true] [topology:784,size_of_all_hidden_layer_separated_by_coma,10]
+ [activation:relu OR sigmoid OR fast_sigmoid OR leaky OR swish OR tanh] [numEpoch:int] 
+ [batchSize:int (only if routine:true)]
 ```
 
 If you do it wrong, the executable will tell you how to do it and end the code execution as follow :
 ```bash
-/mlp [routine] [Topology] [Activation] [TrainingSample] [numEpoch] [batchSize]
+./mlp
+Usage : ./mlp [routine] [Topology] [Activation] [TrainingSample] [numEpoch] [batchSize]
                 ^          ^         ^              ^                         ^         
                 |          |         |              |                         |         
 batch:true   ___|          |         |              |__=< 60000               |___only when routine:true
 classic:false              |         |                                                  
                            |         |                                                  
-Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || leaky || tanh || swish
+Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || leaky || tanh || swish  
 ```
 
 3. Here is a sample of how to do it with or whitout batch usage : 
@@ -76,6 +81,7 @@ Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || lea
 3. If you are not on the cluster, a Docker container setup is provided in the docker/ directory for a compatible environment (NOT DONE YET !).
 
 Project made by : 
+
 MSILINI Yassine,
 
 ARHAB Sofiane,
