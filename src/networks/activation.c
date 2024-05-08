@@ -155,3 +155,15 @@ double reluPrime(double x) {
 double tanhh(double x) {
     return tanh(x);
 }
+
+/**
+ * Derivative of the hyperbolic tangent function.
+ * Computes the derivative of the hyperbolic tangent for a given double-precision floating-point number.
+ *
+ * @param x The input value.
+ * @return The derivative of the hyperbolic tangent at x.
+ */
+double tanhPrime(double x) {
+    double tanh_x = tanh(x);
+    return 1.0 - tanh_x * tanh_x;
+}
