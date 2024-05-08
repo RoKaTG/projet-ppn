@@ -548,17 +548,6 @@ double testMLP(MLP *net, int numTestImages, int activation) {
         if (predictedLabel == testLabels[i]) {
             correctPredictions++;
         }
-        /*
-        // Printing the vector of prediction for each image
-        printf("Prediction for image %d: [", i);
-        for (int j = 0; j < 10; j++) {
-            if (j != 9) {
-                printf("%f, ", output[j]);
-            }
-            if (j == 9) {
-                printf("%f] - Real Label: %d\n", output[j], testLabels[i]); 
-            }
-        }*/
 
     }
     // Calculation of accuracy
@@ -578,7 +567,29 @@ double testMLP(MLP *net, int numTestImages, int activation) {
 /*                                       */
 /*****************************************/
 
+/**
+ * Perform batch training on a Multilayer Perceptron (MLP) network.
+ * 
+ * This function accumulates gradients for weights and biases over a batch of input-output pairs,
+ * then applies average gradients and updates weights with L2 regularization.
+ * 
+ * @param net Pointer to the MLP network.
+ * @param inputs Array of input data for the batch.
+ * @param targets Array of target output data for the batch.
+ * @param batchSize Size of the batch.
+ * @param lambda Regularization parameter for L2 regularization.
+ * @param activation activation function combination to be applied.
+ */
 void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda, int activation) {
+    const MKL_INT group_count = 1;
+    MKL_INT m[1], n[1], k[1];
+    MKL_INT lda[1], ldb[1], ldc[1];
+    CBLAS_TRANSPOSE transA[1], transB[1];
+    double alpha[1], beta[1];
+    const double *a[1], *ba[1];
+    double *c[1];
+    int group_size[1] = {batchSize};
+    
     // Reset gradient accumulators to zero for weights and biases
     for (int i = 0; i < net->numLayers - 1; i++) {
         memset(net->weightGradients[i], 0, net->layerSizes[i + 1] * net->layerSizes[i] * sizeof(double));
@@ -586,16 +597,28 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
     }
 
     // Accumulate gradients for each input in the batch
+    double *prevDelta = calloc(net->layerSizes[net->numLayers - 1], sizeof(double));
+    
     for (int b = 0; b < batchSize; b++) {
-        // NOTE We can use the feedforward to compute outputs and derivative outputs because we compute them in here to ease the batching process
-        feedforward(net, inputs[b], targets[b], activation); 
+        feedforward(net, inputs[b], targets[b], activation);
 
-        // NOTE We do a backpropagate & use the errors and accumulate gradients but without updating weights and biases
-        double *prevDelta = calloc(net->layerSizes[net->numLayers - 1], sizeof(double));
         for (int i = net->numLayers - 2; i >= 0; i--) {
             int M = net->layerSizes[i + 1];
             int N = net->layerSizes[i];
             double *delta = calloc(M, sizeof(double));
+            m[0] = net->layerSizes[i + 1];
+            n[0] = net->layerSizes[i];
+            k[0] = 1;
+            lda[0] = m[0];
+            ldb[0] = n[0];
+            ldc[0] = n[0];
+            transA[0] = CblasTrans;
+            transB[0] = CblasNoTrans;
+            alpha[0] = 1.0;
+            beta[0] = 1.0;
+            a[0] = delta;
+            ba[0] = i > 0 ? net->outputs[i - 1] : inputs[b];
+            c[0] = net->weightGradients[i];
 
             // Compute delta for current layer
             if (i == net->numLayers - 2) { // Output layer
@@ -611,34 +634,40 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
                     delta[j] = sum * net->dOutputs[i][j];
                 }
             }
-
-            // Accumulate gradients for weights and biases
+            // Accumulate gradients for biases
             for (int j = 0; j < M; j++) {
-                net->biasGradients[i][j] += delta[j]; // NOTE  We accumulate bias gradient this way
-                for (int k = 0; k < N; k++) {
-                    net->weightGradients[i][j * N + k] += delta[j] * (i > 0 ? net->outputs[i - 1][k] : inputs[b][k]); // NOTE This way is a bit complicated but is more efficent for weight gradient
-                }
+                net->biasGradients[i][j] += delta[j];
             }
+            // Use cblas dgemm to accumulate weight gradients
+            cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, M, N, 1, 1.0, 
+                        delta, M, i > 0 ? net->outputs[i - 1] : inputs[b], N, 1.0, 
+                        net->weightGradients[i], N);
 
-            if (i < net->numLayers - 2) free(prevDelta);
+            free(prevDelta);
             prevDelta = delta;
         }
         free(prevDelta);
+        prevDelta = NULL;
     }
-
-    // NOTE We use average gradients to apply updates with L2 regularization
+    
+    // Apply average gradients and update weights with L2 regularization
     for (int i = 0; i < net->numLayers - 1; i++) {
         int M = net->layerSizes[i + 1];
         int N = net->layerSizes[i];
+        double scale = -net->learningRate / batchSize;
+        
+        // Update biases using MKL daxpy
+        cblas_daxpy(M, scale, net->biasGradients[i], 1, net->biases[i], 1);
+
         for (int j = 0; j < M; j++) {
-            net->biases[i][j] -= net->learningRate * net->biasGradients[i][j] / batchSize;
-            for (int k = 0; k < N; k++) {
-                double weightGradientAvg = net->weightGradients[i][j * N + k] / batchSize;
-                net->weights[i][j * N + k] -= net->learningRate * (weightGradientAvg + lambda * net->weights[i][j * N + k]);
-            }
+            // Apply L2 regularization using MKL dscal
+            cblas_dscal(N, 1.0 - net->learningRate * lambda, &net->weights[i][j * N], 1);
+            // Update weights using MKL daxpy
+            cblas_daxpy(N, scale, &net->weightGradients[i][j * N], 1, &net->weights[i][j * N], 1);
         }
     }
 }
+
 
 /**
  * Train the MLP network using mini-batch gradient descent.
