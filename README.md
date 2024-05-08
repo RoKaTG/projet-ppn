@@ -80,11 +80,16 @@ Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || lea
 2. For optimal performance, it is recommended to run this on the fob1 cluster, specifically on a hsw0X node.
 3. If you are not on the cluster, a Docker container setup is provided in the docker/ directory for a compatible environment (Not tested yet !).
 
+Fun stat : 
+```bash
+git ls-files | while read f; do git blame -w -M -C -C --line-porcelain "$f" | grep -I '^author '; done | sort -f | uniq -ic | sort -n --reverse
+```
+
 Project made by : 
 
-MSILINI Yassine,
+MSILINI Yassine (RKG = RoKATG),
 
-ARHAB Sofiane,
+ARHAB Sofiane (dxhardys),
 
-CHABANE Khaled.
+CHABANE Khaled (CHA-Khaled).
 
