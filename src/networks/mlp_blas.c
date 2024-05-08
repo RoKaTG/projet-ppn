@@ -64,7 +64,7 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
         return NULL;
     }
 
-    // NOTE: Use MKL to initialize weights and set biases to zero
+    // NOTE Use MKL to initialize weights and set biases to zero
     VSLStreamStatePtr stream;
     vslNewStream(&stream, VSL_BRNG_MT19937, time(NULL));
 
@@ -122,8 +122,6 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
 /*                                    */
 /**************************************/
 
-// NOTE We also need the squared norm and its derivative
-
 /**
  * Compute the squared norm of a vector.
  *
@@ -136,18 +134,18 @@ double squaredNorm(double *x, int n) {
     __m256d sum_vec = _mm256_setzero_pd();
     int i = 0;
 
-    // NOTE: Process 4 elements of our data at once
+    // NOTE Process 4 elements of our data at once
     for (i = 0; i <= n - 4; i += 4) {
         __m256d x_vec = _mm256_loadu_pd(&x[i]);
         sum_vec = _mm256_add_pd(sum_vec, _mm256_mul_pd(x_vec, x_vec));
     }
 
-    // NOTE: Reduce vector sum to scalar sum
+    // NOTE Reduce vector sum to scalar sum
     double sum_array[4];
     _mm256_storeu_pd(sum_array, sum_vec);
     sum = sum_array[0] + sum_array[1] + sum_array[2] + sum_array[3];
 
-    // NOTE: We need to process any remaining elements
+    // NOTE We need to process any remaining elements
     for (int j = i; j < n; j++) {
         sum += x[j] * x[j];
     }
@@ -168,58 +166,43 @@ int feedforward(MLP *net, double *input, double *expected, int activation) {
     // NOTE This will point to the current layer input. Note how we are not copying any memory.
     double *layerInput = input;
 
+    const MKL_INT group_count = 1;
+    MKL_INT m[1], n[1], k[1];
+    MKL_INT lda[1], ldb[1], ldc[1];
+    CBLAS_TRANSPOSE transA[1], transB[1];
+    double alpha[1], beta[1];
+    const double *a[1], *b[1];
+    double *c[1];
+    int group_size[1] = {1};
+
     // Calculate the output for each subsequent layer
     // NOTE Indices start at 0 to make things clearer
     for (int i = 0; i < net->numLayers - 1; i++) {
-        int M = net->layerSizes[i + 1];   // Number of rows in the weight matrix (and output size)
-        int N = 1;                        // Since the input is a vector
-        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+        m[0] = net->layerSizes[i + 1]; // Number of rows in the weight matrix (and output size)
+        n[0] = 1;                      // Since the input is a vector
+        k[0] = net->layerSizes[i];     // Number of columns in the weight matrix (and input size)
+        lda[0] = k[0];
+        ldb[0] = n[0];
+        ldc[0] = n[0];
+        transA[0] = CblasNoTrans;
+        transB[0] = CblasNoTrans;
+        alpha[0] = 1.0;
+        beta[0] = 0.0;
+        a[0] = net->weights[i];
+        b[0] = layerInput;
+        c[0] = net->matprod[i];
 
         // Perform matrix multiplication
         // NOTE We are doing everything on the same layer, so we are indexing all matrices
         // using simply i.
         // Also, be careful, we need to set beta to 0 (we overwrite C/matprod completely)
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
-                    net->weights[i], K, layerInput, N, 0.0, net->matprod[i], N);
-
-        // Apply the activation function to each element of net->outputs[i] & apply softmax || sigmoid to the last layer
+        cblas_dgemm_batch(CblasRowMajor, transA, transB, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc, group_count, group_size);
+        
+        // Apply the activation function to each element of net->outputs[i]
         // NOTE Don't forget to apply biases (we do it in the same loop)
-        // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
-        // This way, we will be performing only 1 function call (vs M currently)
-            if (activation == 1) {
-                if (i == net->numLayers - 2) {
-                    for (int j = 0; j < M; j++) {
-                        net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                        net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
-                    }
-                } else {
-                    for (int j = 0; j < M; j++) {
-                        net->outputs[i][j] = relu(net->matprod[i][j] + net->biases[i][j]);   
-                        // NOTE Store activation function (relu) derivative
-                         net->dOutputs[i][j] = reluPrime(net->matprod[i][j] + net->biases[i][j]);
-                    }
-                }
-            }
+        feeding(net, activation, i, m[0]);
 
-            if (activation == 2) {
-                if (i == net->numLayers - 2) {
-                    softmax(net->matprod[i], net->outputs[i], M);
-                    softmax(net->outputs[i], net->dOutputs[i], M); // NOTE The way we implemented softmax make it that
-                } else {                                           // softmax = softmaxPrime so we store derivative this way
-                    for (int j = 0; j < M; j++) {
-                        net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                        // NOTE Store activation function (sigmoid) derivative
-                        net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
-                    }
-                }                                                
-            }
-
-            /*for (int j = 0; j < M; j++) {
-                net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                // NOTE Store activation function (sigmoid) derivative
-                net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
-            }*/
-        // NOTE Set input for the next layer i+1
+        // NOTE Set input for the next layer i+1        
         layerInput = net->outputs[i];
     }
 
@@ -231,9 +214,9 @@ int feedforward(MLP *net, double *input, double *expected, int activation) {
     for (int i = 0; i < net->layerSizes[net->numLayers - 1]; i++) {
         net->deltas[i] = expected[i] - netOutput[i];
     }
+
     // NOTE Computing squaredNorm is technically useless for the backward, but we'll do it 
-    // anyway because it is cheap, and it can be interesting to study the evolution of this value over 
-    // the training phase
+    // anyway because it is cheap
     net->delta = squaredNorm(&(net->deltas[0]), net->layerSizes[net->numLayers - 1]);
     // NOTE However, we do need the squaredNormPrime for the backward
     squaredNormPrime(&(net->deltas[0]), &(net->dDeltas[0]), net->layerSizes[net->numLayers - 1]);
