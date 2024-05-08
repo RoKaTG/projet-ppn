@@ -461,45 +461,43 @@ double *predict(MLP *net, double *input, int activation) {
     // NOTE This will point to the current layer input. Note how we are not copying any memory.
     double *layerInput = input;
 
+    const MKL_INT group_count = 1;
+    MKL_INT m[1], n[1], k[1];
+    MKL_INT lda[1], ldb[1], ldc[1];
+    CBLAS_TRANSPOSE transA[1], transB[1];
+    double alpha[1], beta[1];
+    const double *a[1], *b[1];
+    double *c[1];
+    int group_size[1] = {1};
+
     // Compute the output for each subsequent layer
     // NOTE Indices start at 0 to make things clearer
     for (int i = 0; i < net->numLayers - 1; i++) {
-        int M = net->layerSizes[i + 1];     // Number of rows in the weight matrix (and output size)
-        int N = 1;                        // Since the input is a vector
-        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+        m[0] = net->layerSizes[i + 1]; // Number of rows in the weight matrix (and output size)
+        n[0] = 1;                      // Since the input is a vector
+        k[0] = net->layerSizes[i];     // Number of columns in the weight matrix (and input size)
+        lda[0] = k[0];
+        ldb[0] = n[0];
+        ldc[0] = n[0];
+        transA[0] = CblasNoTrans;
+        transB[0] = CblasNoTrans;
+        alpha[0] = 1.0;
+        beta[0] = 0.0;
+
+        a[0] = net->weights[i];
+        b[0] = layerInput;
+        c[0] = net->matprod[i];
 
         // Perform matrix multiplication
         // NOTE We are doing everything on the same layer, so we are indexing all matrices
         // using simply i.
         // Also, be careful, we need to set beta to 0 (we overwrite C/matprod completely)
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
-                    net->weights[i], K, layerInput, N, 0.0, net->matprod[i], N);
 
-        // Apply the activation function (sigmoid) to each element of net->outputs[i]
+        cblas_dgemm_batch(CblasRowMajor, transA, transB, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc, group_count, group_size);
+
+        // Apply the activation function to each element of net->outputs[i]
         // NOTE Don't forget to apply biases (we do it in the same loop)
-        // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
-        // This way, we will be performing only 1 function call (vs M currently)
-        if (activation == 1) {
-            if (i == net->numLayers - 2) {
-                for (int j = 0; j < M; j++) {
-                    net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                }
-            } else {
-                for (int j = 0; j < M; j++) {
-                    net ->outputs[i][j] = relu(net->matprod[i][j] + net->biases[i][j]);
-                }
-            }
-        }
-
-        if (activation == 2) {
-            if (i == net->numLayers - 2) {
-                softmax(net->matprod[i], net->outputs[i], M);
-            } else {
-                for (int j = 0; j < M; j++) {
-                    net ->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                }
-            }
-        }
+        feeding(net, activation, i, m[0]);
 
         // NOTE Set input for the next layer i+1
         layerInput = net->outputs[i];
