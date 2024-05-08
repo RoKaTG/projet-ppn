@@ -231,6 +231,15 @@ double tanhPrime(double x) {
 
 /******************************reLU******************************/
 
+/**
+ * ReLU activation function using AVX2 intrinsics.
+ * Applies the Rectified Linear Unit (ReLU) activation to an array of double-precision floating-point numbers.
+ * For each element x, it computes max(x, 0).
+ *
+ * @param x Pointer to the input array (double precision).
+ * @param output Pointer to the output array where results are stored.
+ * @param length The number of elements in the input and output arrays.
+ */
 void relu_avx2(double *x, double *output, int length) {
     __m256d zero = _mm256_setzero_pd();
     for (int i = 0; i < length; i += 8) {
@@ -240,13 +249,70 @@ void relu_avx2(double *x, double *output, int length) {
     }
 }
 
+/**
+ * Derivative of the ReLU activation function using AVX2 intrinsics.
+ * Computes the derivative of the Rectified Linear Unit (ReLU) activation for an array of double-precision floating-point numbers.
+ * For each element x, it returns 1 if x > 0, otherwise 0.
+ *
+ * @param x Pointer to the input array (double precision).
+ * @param output Pointer to the output array where results are stored.
+ * @param length The number of elements in the input and output arrays.
+ */
 void reluPrime_avx2(double *x, double *output, int length) {
     __m256d zero = _mm256_setzero_pd();
     for (int i = 0; i < length; i += 8) {
         __m256d x_vec = _mm256_loadu_pd(&x[i]);
         __m256d mask = _mm256_cmp_pd(x_vec, zero, _CMP_GT_OS);
-        __m256d relu_prime = _mm256_and_pd(mask, _mm256_set1_pd(1.0f));
+        __m256d relu_prime = _mm256_and_pd(mask, _mm256_set1_pd(1.0));
 
         _mm256_storeu_pd(&output[i], relu_prime);
+    }
+}
+
+/******************************LeakyreLu******************************/
+
+/**
+ * Leaky ReLU activation function using AVX2 intrinsics.
+ * Applies the Leaky ReLU activation to an array of double-precision floating-point numbers.
+ * For each element x, it computes x if x > 0, otherwise alpha * x.
+ *
+ * @param x Pointer to the input array (double precision).
+ * @param output Pointer to the output array where results are stored.
+ * @param length The number of elements in the input and output arrays.
+ * @param alpha The leakage factor for negative inputs.
+ */
+void leakyReLU_avx2(double *x, double *output, int length, double alpha) {
+    __m256d zero = _mm256_setzero_pd();
+    __m256d alpha_vec = _mm256_set1_pd(alpha);
+    
+    for (int i = 0; i < length; i += 4) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);
+        __m256d neg_mask = _mm256_cmp_pd(x_vec, zero, _CMP_LT_OS);
+        __m256d alpha_mul = _mm256_mul_pd(alpha_vec, x_vec);
+        __m256d result = _mm256_blendv_pd(x_vec, alpha_mul, neg_mask);
+        _mm256_storeu_pd(&output[i], result);
+    }
+}
+
+/**
+ * Derivative of the Leaky ReLU activation function using AVX2 intrinsics.
+ * Computes the derivative of the Leaky ReLU activation for an array of double-precision floating-point numbers.
+ * For each element x, it returns 1 if x > 0, otherwise alpha.
+ *
+ * @param x Pointer to the input array (double precision).
+ * @param output Pointer to the output array where results are stored.
+ * @param length The number of elements in the input and output arrays.
+ * @param alpha The leakage factor for negative inputs.
+ */
+void leakyReLUPrime_avx2(double *x, double *output, int length, double alpha) {
+    __m256d zero = _mm256_setzero_pd();
+    __m256d alpha_vec = _mm256_set1_pd(alpha);
+    __m256d one = _mm256_set1_pd(1.0);
+
+    for (int i = 0; i < length; i += 4) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);
+        __m256d neg_mask = _mm256_cmp_pd(x_vec, zero, _CMP_LT_OS);
+        __m256d result = _mm256_blendv_pd(one, alpha_vec, neg_mask);
+        _mm256_storeu_pd(&output[i], result);
     }
 }
