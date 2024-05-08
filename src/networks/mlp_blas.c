@@ -753,6 +753,8 @@ void free_mlp(MLP *net) {
             free(net->dOutputs[i]);
             free(net->matprod[i]);
             free(net->inputAdjoints[i]);
+            free(net->weightGradients[i]);
+            free(net->biasGradients[i]);
         }
 
         free(net->weights);
@@ -762,6 +764,8 @@ void free_mlp(MLP *net) {
         free(net->inputAdjoints);
         free(net->matprod);
         free(net->layerSizes);
+        free(net->weightGradients);
+        free(net->biasGradients);
         free(net);
     }
 }
