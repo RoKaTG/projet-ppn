@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
 
     int batchSize; // = atoi(argv[6]);
 
-    double learningRate = 0.01; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
+    double learningRate = 0.1; // NOTE Learning rate being set at 10^-2 (will be decaying in a future update)
 
     int numTestImages = 10000; 
 
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
 	float res = testMLP(net, numTestImages, activation);
     //Printing the MLP's accuracy & time execution
     printf("Time execution: %lfs\n", exec_t);
-    printf("Accuracy: %.2f%% | Loss: %.2f%%\n", res, 100 - res);
+//    printf("Accuracy: %.2f%% | Loss: %.2f%%\n", res, 100 - res);
 
     char* topologyStr = malloc(1024 * sizeof(char));
     strcpy(topologyStr, "");
@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
             strcat(topologyStr, ",");
         }
     }
-
+/*
     result.routine = routine ? "batch" : "default";
     result.actFunction = func;
     result.topology = topologyStr;
@@ -192,7 +192,8 @@ int main(int argc, char *argv[]) {
         "Batch Size", "Precision (%)", "Total Time (s)", "Avg Epoch Time (s)", "Error Rate (%)");
 
     printBenchmarkResult(&result);
-
+*/
+    printf("Accuracy: %.2f%\n", res);
     free_mlp(net);
     free(topologyStr);
     free(layerSizes);
