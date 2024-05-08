@@ -1,11 +1,13 @@
 #include <cblas.h>
-#include <clapack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <string.h>
 #include <stdint.h>
+#include <immintrin.h>
+#include <omp.h>
+
 
 #include "../../include/networks/activation.h"
 
@@ -219,4 +221,32 @@ double tanhh(double x) {
 double tanhPrime(double x) {
     double tanh_x = tanh(x);
     return 1.0 - tanh_x * tanh_x;
+}
+
+/**************************************/
+/*                                    */
+/*          AVX2 counterpart          */
+/*                                    */
+/**************************************/
+
+/******************************reLU******************************/
+
+void relu_avx2(double *x, double *output, int length) {
+    __m256d zero = _mm256_setzero_pd();
+    for (int i = 0; i < length; i += 8) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);
+        __m256d result = _mm256_max_pd(x_vec, zero);
+        _mm256_storeu_pd(&output[i], result);
+    }
+}
+
+void reluPrime_avx2(double *x, double *output, int length) {
+    __m256d zero = _mm256_setzero_pd();
+    for (int i = 0; i < length; i += 8) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);
+        __m256d mask = _mm256_cmp_pd(x_vec, zero, _CMP_GT_OS);
+        __m256d relu_prime = _mm256_and_pd(mask, _mm256_set1_pd(1.0f));
+
+        _mm256_storeu_pd(&output[i], relu_prime);
+    }
 }
