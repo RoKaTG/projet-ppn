@@ -1,5 +1,3 @@
-#include <cblas.h>
-#include <clapack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -7,11 +5,16 @@
 #include <string.h>
 #include <stdint.h>
 #include <omp.h>
+#include <immintrin.h>
+#include <mkl.h>
 
 #include "../../include/networks/mlp_blas.h"
 #include "../../include/networks/activation.h"
 #include "../../include/mnist_reader/mnist_reader.h"
 #include "../../include/benchmark/bench.h"
+#include "../../include/networks/feeding.h"
+
+#define ALIGNMENT 32
  
 /**************************************/
 /*                                    */
@@ -30,68 +33,85 @@
  * @return A pointer to the newly created MLP network.
  */
 MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
-    
-    MLP *net = malloc(sizeof(MLP));
-    net->numLayers = numLayers;
-    net->layerSizes = malloc(numLayers * sizeof(int));
+    // Allocate memory for the structure
+    MLP *net = (MLP *)malloc(sizeof(MLP));
+    if (!net) return NULL;
 
-    // Alloc ** ptrs that contain all layers
-    net->weights = malloc((numLayers - 1) * sizeof(double *));
-    net->biases = malloc((numLayers - 1) * sizeof(double *));
-    // NOTE Initialize outputs the same way (this will store fact(weights*input+biases))
-    net->outputs = malloc((numLayers - 1) * sizeof(double *));
-    net->dOutputs = malloc((numLayers - 1) * sizeof(double *));
-    net->matprod = malloc((numLayers - 1) * sizeof(double *));
-    net->inputAdjoints = malloc((numLayers - 1) * sizeof(double *));
- 
+    net->numLayers = numLayers;
     net->learningRate = learningRate;
 
-    // NOTE After initializing weights and biases
-    net->weightGradients = malloc((numLayers - 1) * sizeof(double *));
-    net->biasGradients = malloc((numLayers - 1) * sizeof(double *));
+    // Allocate memory for layer sizes
+    net->layerSizes = (int *)aligned_alloc(ALIGNMENT, numLayers * sizeof(int));
+    if (!net->layerSizes) {
+        free(net);
+        return NULL;
+    }
+    memcpy(net->layerSizes, layerSizes, numLayers * sizeof(int));
+
+    // Allocate memory for arrays of pointers
+    net->weights = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->biases = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->outputs = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->dOutputs = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->matprod = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->inputAdjoints = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->weightGradients = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->biasGradients = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    if (!net->weights || !net->biases || !net->outputs || !net->dOutputs || !net->matprod || !net->inputAdjoints || !net->weightGradients || !net->biasGradients) {
+        // Clean up all allocated memory in case any allocation fails
+        free(net->layerSizes);
+        free(net);
+        return NULL;
+    }
+
+    // NOTE: Use MKL to initialize weights and set biases to zero
+    VSLStreamStatePtr stream;
+    vslNewStream(&stream, VSL_BRNG_MT19937, time(NULL));
 
     for (int i = 0; i < numLayers - 1; i++) {
         int rows = layerSizes[i + 1];
         int cols = layerSizes[i];
-        net->weightGradients[i] = malloc(rows * cols * sizeof(double));
-        net->biasGradients[i] = malloc(rows * sizeof(double));
+        
+        // Allocate and initialize weights
+        net->weights[i] = (double *)aligned_alloc(ALIGNMENT, rows * cols * sizeof(double));
+        net->biases[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
+        net->outputs[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
+        net->dOutputs[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
+        net->matprod[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
+        net->inputAdjoints[i] = (double *)aligned_alloc(ALIGNMENT, cols * sizeof(double));
+        net->weightGradients[i] = (double *)aligned_alloc(ALIGNMENT, rows * cols * sizeof(double));
+        net->biasGradients[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
 
-        // Initialize gradients to zero
-        for (int j = 0; j < rows * cols; j++) {
-            net->weightGradients[i][j] = 0.0;
+        if (!net->weights[i] || !net->biases[i] || !net->outputs[i] || !net->dOutputs[i] || !net->matprod[i] || !net->inputAdjoints[i] || !net->weightGradients[i] || !net->biasGradients[i]) {
+            // Clean up all allocated memory in case any allocation fails
+            for (int j = 0; j <= i; j++) {
+                free(net->weights[j]);
+                free(net->biases[j]);
+                free(net->outputs[j]);
+                free(net->dOutputs[j]);
+                free(net->matprod[j]);
+                free(net->inputAdjoints[j]);
+                free(net->weightGradients[j]);
+                free(net->biasGradients[j]);
+            }
+            free(net->weights);
+            free(net->biases);
+            free(net->outputs);
+            free(net->dOutputs);
+            free(net->matprod);
+            free(net->inputAdjoints);
+            free(net->weightGradients);
+            free(net->biasGradients);
+            free(net->layerSizes);
+            free(net);
+            return NULL;
         }
-        for (int j = 0; j < rows; j++) {
-            net->biasGradients[i][j] = 0.0;
-        }
+
+        vdRngUniform(VSL_RNG_METHOD_UNIFORM_STD, stream, rows * cols, net->weights[i], -1.0, 1.0);
+        memset(net->biases[i], 0, rows * sizeof(double));
     }
 
-    srand(time(NULL));
-
-    // Alloc individual layers
-    for (int i = 0; i < numLayers - 1; i++) {
-        int rows = layerSizes[i + 1];
-        int cols = layerSizes[i];
-        net->weights[i] = malloc(rows * cols * sizeof(double));
-        net->biases[i] = malloc(rows * sizeof(double));
-        // Outputs have the same size as biases
-        net->outputs[i] = malloc(rows * sizeof(double));
-        net->dOutputs[i] = malloc(rows * sizeof(double));
-        net->matprod[i] = malloc(rows * sizeof(double));
-        net->inputAdjoints[i] = malloc(cols * sizeof(double));
-
-        // Initialize weights and biases (random weights, biases set to zero)
-        for (int j = 0; j < rows * cols; j++) {
-            net->weights[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Weights between -1 and 1
-        }
-        for (int j = 0; j < rows; j++) {
-            net->biases[i][j] = 0; // Biases initialized to 0
-        }
-    }
-
-    // Copy layers sizes
-    for (int i = 0; i < numLayers; i++) {
-        net->layerSizes[i] = layerSizes[i];
-    }
+    vslDeleteStream(&stream);
 
     return net;
 }
