@@ -56,6 +56,19 @@ double fast_sigmoid(double x) {
     return x / (1.0 + fabs(x));
 }
 
+/**
+ * Derivative of the fast sigmoid function using double precision.
+ * Provides the gradient of the fast sigmoid function, useful in optimization algorithms like backpropagation.
+ * For f(x) = x / (1 + |x|), the derivative is f'(x) = 1 / ((1 + |x|)²).
+ *
+ * @param x The input value (double).
+ * @return The derivative of the fast sigmoid at x (double).
+ */
+double fast_sigmoidPrime(double x) {
+    double abs_x = fabs(x);
+    return 1.0 / ((1 + abs_x) * (1 + abs_x));
+}
+
 /**************************************/
 /*                                    */
 /*          Softmax's Function        */
