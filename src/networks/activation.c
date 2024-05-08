@@ -148,6 +148,18 @@ double leakyReLU(double x, double alpha) {
     return x > 0 ? x : alpha * x;
 }
 
+/**
+ * Derivative of the Leaky ReLU activation function.
+ * Computes the derivative of the Leaky ReLU activation for a double-precision floating-point number.
+ *
+ * @param x The input value.
+ * @param alpha The leakage factor for negative inputs.
+ * @return The derivative of the Leaky ReLU activation at x.
+ */
+double leakyReLUPrime(double x, double alpha) {
+    return x > 0 ? 1.0 : alpha;
+}
+
 /**************************************/
 /*                                    */
 /*          tanh's Function           */
