@@ -178,6 +178,20 @@ double swish(double x) {
     return x / (1.0 + exp(-x));
 }
 
+/**
+ * Derivative of the Swish activation function.
+ * Computes the derivative of the Swish activation for a given double-precision floating-point number.
+ * The derivative is f'(x) = f(x) + sigmoid(x) * (1 - f(x)), where f(x) is the Swish function.
+ *
+ * @param x The input value.
+ * @return The derivative of the Swish activation at x.
+ */
+double swishPrime(double x) {
+    double swish_x = swish(x);
+    double sigmoid_x = 1.0 / (1.0 + exp(-x));
+    return swish_x + sigmoid_x * (1 - swish_x);
+}
+
 /**************************************/
 /*                                    */
 /*          tanh's Function           */
