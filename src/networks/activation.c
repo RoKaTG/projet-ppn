@@ -40,6 +40,24 @@ double sigmoidPrime(double x) {
 
 /**************************************/
 /*                                    */
+/*      Fast Sigmoid's Function       */
+/*                                    */
+/**************************************/
+
+/**
+ * Fast sigmoid function using double precision.
+ * An approximation of the sigmoid function that is computationally faster.
+ * It is defined as f(x) = x / (1 + |x|).
+ *
+ * @param x The input value (double).
+ * @return The fast sigmoid of x (double).
+ */
+double fast_sigmoid(double x) {
+    return x / (1.0 + fabs(x));
+}
+
+/**************************************/
+/*                                    */
 /*          Softmax's Function        */
 /*                                    */
 /**************************************/
