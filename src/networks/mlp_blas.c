@@ -1,5 +1,3 @@
-#include <cblas.h>
-#include <clapack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -7,11 +5,16 @@
 #include <string.h>
 #include <stdint.h>
 #include <omp.h>
+#include <immintrin.h>
+#include <mkl.h>
 
 #include "../../include/networks/mlp_blas.h"
 #include "../../include/networks/activation.h"
 #include "../../include/mnist_reader/mnist_reader.h"
 #include "../../include/benchmark/bench.h"
+#include "../../include/networks/feeding.h"
+
+#define ALIGNMENT 32
  
 /**************************************/
 /*                                    */
@@ -30,68 +33,85 @@
  * @return A pointer to the newly created MLP network.
  */
 MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
-    
-    MLP *net = malloc(sizeof(MLP));
-    net->numLayers = numLayers;
-    net->layerSizes = malloc(numLayers * sizeof(int));
+    // Allocate memory for the structure
+    MLP *net = (MLP *)malloc(sizeof(MLP));
+    if (!net) return NULL;
 
-    // Alloc ** ptrs that contain all layers
-    net->weights = malloc((numLayers - 1) * sizeof(double *));
-    net->biases = malloc((numLayers - 1) * sizeof(double *));
-    // NOTE Initialize outputs the same way (this will store fact(weights*input+biases))
-    net->outputs = malloc((numLayers - 1) * sizeof(double *));
-    net->dOutputs = malloc((numLayers - 1) * sizeof(double *));
-    net->matprod = malloc((numLayers - 1) * sizeof(double *));
-    net->inputAdjoints = malloc((numLayers - 1) * sizeof(double *));
- 
+    net->numLayers = numLayers;
     net->learningRate = learningRate;
 
-    // NOTE After initializing weights and biases
-    net->weightGradients = malloc((numLayers - 1) * sizeof(double *));
-    net->biasGradients = malloc((numLayers - 1) * sizeof(double *));
+    // Allocate memory for layer sizes
+    net->layerSizes = (int *)aligned_alloc(ALIGNMENT, numLayers * sizeof(int));
+    if (!net->layerSizes) {
+        free(net);
+        return NULL;
+    }
+    memcpy(net->layerSizes, layerSizes, numLayers * sizeof(int));
+
+    // Allocate memory for arrays of pointers
+    net->weights = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->biases = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->outputs = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->dOutputs = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->matprod = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->inputAdjoints = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->weightGradients = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    net->biasGradients = (double **)aligned_alloc(ALIGNMENT, (numLayers - 1) * sizeof(double *));
+    if (!net->weights || !net->biases || !net->outputs || !net->dOutputs || !net->matprod || !net->inputAdjoints || !net->weightGradients || !net->biasGradients) {
+        // Clean up all allocated memory in case any allocation fails
+        free(net->layerSizes);
+        free(net);
+        return NULL;
+    }
+
+    // NOTE Use MKL to initialize weights and set biases to zero
+    VSLStreamStatePtr stream;
+    vslNewStream(&stream, VSL_BRNG_MT19937, time(NULL));
 
     for (int i = 0; i < numLayers - 1; i++) {
         int rows = layerSizes[i + 1];
         int cols = layerSizes[i];
-        net->weightGradients[i] = malloc(rows * cols * sizeof(double));
-        net->biasGradients[i] = malloc(rows * sizeof(double));
+        
+        // Allocate and initialize weights
+        net->weights[i] = (double *)aligned_alloc(ALIGNMENT, rows * cols * sizeof(double));
+        net->biases[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
+        net->outputs[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
+        net->dOutputs[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
+        net->matprod[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
+        net->inputAdjoints[i] = (double *)aligned_alloc(ALIGNMENT, cols * sizeof(double));
+        net->weightGradients[i] = (double *)aligned_alloc(ALIGNMENT, rows * cols * sizeof(double));
+        net->biasGradients[i] = (double *)aligned_alloc(ALIGNMENT, rows * sizeof(double));
 
-        // Initialize gradients to zero
-        for (int j = 0; j < rows * cols; j++) {
-            net->weightGradients[i][j] = 0.0;
+        if (!net->weights[i] || !net->biases[i] || !net->outputs[i] || !net->dOutputs[i] || !net->matprod[i] || !net->inputAdjoints[i] || !net->weightGradients[i] || !net->biasGradients[i]) {
+            // Clean up all allocated memory in case any allocation fails
+            for (int j = 0; j <= i; j++) {
+                free(net->weights[j]);
+                free(net->biases[j]);
+                free(net->outputs[j]);
+                free(net->dOutputs[j]);
+                free(net->matprod[j]);
+                free(net->inputAdjoints[j]);
+                free(net->weightGradients[j]);
+                free(net->biasGradients[j]);
+            }
+            free(net->weights);
+            free(net->biases);
+            free(net->outputs);
+            free(net->dOutputs);
+            free(net->matprod);
+            free(net->inputAdjoints);
+            free(net->weightGradients);
+            free(net->biasGradients);
+            free(net->layerSizes);
+            free(net);
+            return NULL;
         }
-        for (int j = 0; j < rows; j++) {
-            net->biasGradients[i][j] = 0.0;
-        }
+
+        vdRngUniform(VSL_RNG_METHOD_UNIFORM_STD, stream, rows * cols, net->weights[i], -1.0, 1.0);
+        memset(net->biases[i], 0, rows * sizeof(double));
     }
 
-    srand(time(NULL));
-
-    // Alloc individual layers
-    for (int i = 0; i < numLayers - 1; i++) {
-        int rows = layerSizes[i + 1];
-        int cols = layerSizes[i];
-        net->weights[i] = malloc(rows * cols * sizeof(double));
-        net->biases[i] = malloc(rows * sizeof(double));
-        // Outputs have the same size as biases
-        net->outputs[i] = malloc(rows * sizeof(double));
-        net->dOutputs[i] = malloc(rows * sizeof(double));
-        net->matprod[i] = malloc(rows * sizeof(double));
-        net->inputAdjoints[i] = malloc(cols * sizeof(double));
-
-        // Initialize weights and biases (random weights, biases set to zero)
-        for (int j = 0; j < rows * cols; j++) {
-            net->weights[i][j] = ((double)rand() / RAND_MAX) * 2 - 1; // Weights between -1 and 1
-        }
-        for (int j = 0; j < rows; j++) {
-            net->biases[i][j] = 0; // Biases initialized to 0
-        }
-    }
-
-    // Copy layers sizes
-    for (int i = 0; i < numLayers; i++) {
-        net->layerSizes[i] = layerSizes[i];
-    }
+    vslDeleteStream(&stream);
 
     return net;
 }
@@ -102,8 +122,6 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
 /*                                    */
 /**************************************/
 
-// NOTE We also need the squared norm and its derivative
-
 /**
  * Compute the squared norm of a vector.
  *
@@ -112,10 +130,26 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
  * @return The squared norm of the vector.
  */
 double squaredNorm(double *x, int n) {
-    double sum = 0.;
-    for(int i=0; i<n; i++) {
-        sum += x[i] * x[i];
+    double sum = 0.0;
+    __m256d sum_vec = _mm256_setzero_pd();
+    int i = 0;
+
+    // NOTE Process 4 elements of our data at once
+    for (i = 0; i <= n - 4; i += 4) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);
+        sum_vec = _mm256_add_pd(sum_vec, _mm256_mul_pd(x_vec, x_vec));
     }
+
+    // NOTE Reduce vector sum to scalar sum
+    double sum_array[4];
+    _mm256_storeu_pd(sum_array, sum_vec);
+    sum = sum_array[0] + sum_array[1] + sum_array[2] + sum_array[3];
+
+    // NOTE We need to process any remaining elements
+    for (int j = i; j < n; j++) {
+        sum += x[j] * x[j];
+    }
+
     return sum;
 }
 
@@ -132,58 +166,43 @@ int feedforward(MLP *net, double *input, double *expected, int activation) {
     // NOTE This will point to the current layer input. Note how we are not copying any memory.
     double *layerInput = input;
 
+    const MKL_INT group_count = 1;
+    MKL_INT m[1], n[1], k[1];
+    MKL_INT lda[1], ldb[1], ldc[1];
+    CBLAS_TRANSPOSE transA[1], transB[1];
+    double alpha[1], beta[1];
+    const double *a[1], *b[1];
+    double *c[1];
+    int group_size[1] = {1};
+
     // Calculate the output for each subsequent layer
     // NOTE Indices start at 0 to make things clearer
     for (int i = 0; i < net->numLayers - 1; i++) {
-        int M = net->layerSizes[i + 1];   // Number of rows in the weight matrix (and output size)
-        int N = 1;                        // Since the input is a vector
-        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+        m[0] = net->layerSizes[i + 1]; // Number of rows in the weight matrix (and output size)
+        n[0] = 1;                      // Since the input is a vector
+        k[0] = net->layerSizes[i];     // Number of columns in the weight matrix (and input size)
+        lda[0] = k[0];
+        ldb[0] = n[0];
+        ldc[0] = n[0];
+        transA[0] = CblasNoTrans;
+        transB[0] = CblasNoTrans;
+        alpha[0] = 1.0;
+        beta[0] = 0.0;
+        a[0] = net->weights[i];
+        b[0] = layerInput;
+        c[0] = net->matprod[i];
 
         // Perform matrix multiplication
         // NOTE We are doing everything on the same layer, so we are indexing all matrices
         // using simply i.
         // Also, be careful, we need to set beta to 0 (we overwrite C/matprod completely)
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
-                    net->weights[i], K, layerInput, N, 0.0, net->matprod[i], N);
-
-        // Apply the activation function to each element of net->outputs[i] & apply softmax || sigmoid to the last layer
+        cblas_dgemm_batch(CblasRowMajor, transA, transB, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc, group_count, group_size);
+        
+        // Apply the activation function to each element of net->outputs[i]
         // NOTE Don't forget to apply biases (we do it in the same loop)
-        // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
-        // This way, we will be performing only 1 function call (vs M currently)
-            if (activation == 1) {
-                if (i == net->numLayers - 2) {
-                    for (int j = 0; j < M; j++) {
-                        net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                        net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
-                    }
-                } else {
-                    for (int j = 0; j < M; j++) {
-                        net->outputs[i][j] = relu(net->matprod[i][j] + net->biases[i][j]);   
-                        // NOTE Store activation function (relu) derivative
-                         net->dOutputs[i][j] = reluPrime(net->matprod[i][j] + net->biases[i][j]);
-                    }
-                }
-            }
+        feeding(net, activation, i, m[0]);
 
-            if (activation == 2) {
-                if (i == net->numLayers - 2) {
-                    softmax(net->matprod[i], net->outputs[i], M);
-                    softmax(net->outputs[i], net->dOutputs[i], M); // NOTE The way we implemented softmax make it that
-                } else {                                           // softmax = softmaxPrime so we store derivative this way
-                    for (int j = 0; j < M; j++) {
-                        net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                        // NOTE Store activation function (sigmoid) derivative
-                        net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
-                    }
-                }                                                
-            }
-
-            /*for (int j = 0; j < M; j++) {
-                net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                // NOTE Store activation function (sigmoid) derivative
-                net->dOutputs[i][j] = sigmoidPrime(net->matprod[i][j] + net->biases[i][j]);
-            }*/
-        // NOTE Set input for the next layer i+1
+        // NOTE Set input for the next layer i+1        
         layerInput = net->outputs[i];
     }
 
@@ -195,9 +214,9 @@ int feedforward(MLP *net, double *input, double *expected, int activation) {
     for (int i = 0; i < net->layerSizes[net->numLayers - 1]; i++) {
         net->deltas[i] = expected[i] - netOutput[i];
     }
+
     // NOTE Computing squaredNorm is technically useless for the backward, but we'll do it 
-    // anyway because it is cheap, and it can be interesting to study the evolution of this value over 
-    // the training phase
+    // anyway because it is cheap
     net->delta = squaredNorm(&(net->deltas[0]), net->layerSizes[net->numLayers - 1]);
     // NOTE However, we do need the squaredNormPrime for the backward
     squaredNormPrime(&(net->deltas[0]), &(net->dDeltas[0]), net->layerSizes[net->numLayers - 1]);
@@ -219,7 +238,18 @@ int feedforward(MLP *net, double *input, double *expected, int activation) {
  * @param n  The number of elements in the vector.
  */
 void squaredNormPrime(double *x, double *dx, int n) {
-    for(int i=0; i<n; i++) {
+    int i = 0;
+    __m256d factor = _mm256_set1_pd(2.0);  // Set factor of 2 for all elements of the vector
+
+    // Process in chunks of 4
+    for (i = 0; i <= n - 4; i += 4) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);  // Load 4 elements from x
+        __m256d result_vec = _mm256_mul_pd(x_vec, factor);  // Multiply each element by 2
+        _mm256_storeu_pd(&dx[i], result_vec);  // Store the results back to dx
+    }
+
+    // Handle remaining elements
+    for (; i < n; i++) {
         dx[i] = 2 * x[i];
     }
 }
@@ -247,13 +277,56 @@ void backpropagate(MLP *net, double *netInput, double lambda) {
     // Propagate the error backward through the previous layers and update the weights and biases
     // NOTE i>= is important here, to make sure we visit the last layer
     double *prevInput = &(net->dDeltas[0]);
+
+    const  MKL_INT group_count = 1;
+    MKL_INT m[1], n[1], k[1];
+    MKL_INT lda[1], ldb[1], ldc[1], 
+            lda2[1], ldb2[1], ldc2[1];
+
+    CBLAS_TRANSPOSE transA[1], transB[1];
+
+    double alpha[1], beta[1], 
+           beta2[1], alpha2[1];
+
+    const double *a[1], *b[1],
+                 *a2[1], *b2[1];
+    double *c[1], *c2[1];
+    int group_size[1] = {1};
+
     for (int i = lastLayerIndex; i >= 0; i--) {
         int layerSize = net->layerSizes[i + 1];
-
         int M = net->layerSizes[i + 1];     // Number of rows in the weight matrix (and output size)
-        int N = 1;                        // Since the input is a vector
-        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+        int N = 1;                          // Since the input is a vector
+        int K = net->layerSizes[i];         // Number of columns in the weight matrix (and input size)
 
+        m[0] = net->layerSizes[i + 1];      // Number of rows in the weight matrix (and output size)
+        n[0] = 1;                           // Since the input is a vector
+        k[0] = net->layerSizes[i];          // Number of columns in the weight matrix (and input size)
+        lda[0] = k[0];
+        ldb[0] = n[0];
+        ldc[0] = n[0];
+
+        lda2[0] = n[0];
+        ldb2[0] = n[0];
+        ldc2[0] = k[0];
+
+	    transA[0] = CblasTrans;
+        transB[0] = CblasNoTrans;
+
+        alpha[0] = 1.0;
+        beta[0] = 0.0;
+
+        alpha2[0] = net->learningRate;
+	    beta2[0] = 1.0;
+
+        a[0] = net->weights[i];
+        b[0] = net->dOutputs[i];
+        c[0] = net->inputAdjoints[i];
+
+        a2[0] = net->dOutputs[i];
+        c2[0] = net->weights[i];
+	    //d[0] = matprodInput;
+        
         // plusbar = plusdot * lk+1bar (lk+1bar denotes the last output adkoint, prevInput in the code)
         for (int j = 0; j < layerSize; j++) {
             // NOTE We can overwrite dOutputs as we will not need it anymore.
@@ -272,9 +345,8 @@ void backpropagate(MLP *net, double *netInput, double lambda) {
         // lkbar = lkdot * timesbar; This is one of the matprod special cases.
         // We will compute the current layer input (= the previous layer output)
         // This will be used to continue backprop for the previous layer
-        cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, K, N, M, 1.0, 
-                    net->weights[i], K, net->dOutputs[i], N, 0.0, net->inputAdjoints[i], N);
-
+        cblas_dgemm_batch(CblasRowMajor, transA, transB, k, n, m, alpha, a, lda, b, ldb, beta, c, ldc, group_count, group_size);
+        
         // wbar = wdot * timesbar; This is one of the matprod special cases.
         // We'll compute the matprod between the previous output's transpose and timesbar
         // We will directly apply the correction using the DGEMM 
@@ -288,8 +360,12 @@ void backpropagate(MLP *net, double *netInput, double lambda) {
             // It will actually be the network's output
             matprodInput = netInput;
         }
+        
+        b2[0] = matprodInput;
+        
         cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M, K, N, net->learningRate, 
                     net->dOutputs[i], N, matprodInput, N, 1.0, net->weights[i], K);
+     	//cblas_dgemm_batch(CblasRowMajor, transB, transA, m, k, n, alpha2, a, lda2, b, ldb2, beta2, c, ldc2, group_count, group_size);
 
         for (int j = 0; j < M * K; j++) {
             // NOTE we apply L2 regularization with weight decay
@@ -385,45 +461,43 @@ double *predict(MLP *net, double *input, int activation) {
     // NOTE This will point to the current layer input. Note how we are not copying any memory.
     double *layerInput = input;
 
+    const MKL_INT group_count = 1;
+    MKL_INT m[1], n[1], k[1];
+    MKL_INT lda[1], ldb[1], ldc[1];
+    CBLAS_TRANSPOSE transA[1], transB[1];
+    double alpha[1], beta[1];
+    const double *a[1], *b[1];
+    double *c[1];
+    int group_size[1] = {1};
+
     // Compute the output for each subsequent layer
     // NOTE Indices start at 0 to make things clearer
     for (int i = 0; i < net->numLayers - 1; i++) {
-        int M = net->layerSizes[i + 1];     // Number of rows in the weight matrix (and output size)
-        int N = 1;                        // Since the input is a vector
-        int K = net->layerSizes[i];       // Number of columns in the weight matrix (and input size)
+        m[0] = net->layerSizes[i + 1]; // Number of rows in the weight matrix (and output size)
+        n[0] = 1;                      // Since the input is a vector
+        k[0] = net->layerSizes[i];     // Number of columns in the weight matrix (and input size)
+        lda[0] = k[0];
+        ldb[0] = n[0];
+        ldc[0] = n[0];
+        transA[0] = CblasNoTrans;
+        transB[0] = CblasNoTrans;
+        alpha[0] = 1.0;
+        beta[0] = 0.0;
+
+        a[0] = net->weights[i];
+        b[0] = layerInput;
+        c[0] = net->matprod[i];
 
         // Perform matrix multiplication
         // NOTE We are doing everything on the same layer, so we are indexing all matrices
         // using simply i.
         // Also, be careful, we need to set beta to 0 (we overwrite C/matprod completely)
-        cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
-                    net->weights[i], K, layerInput, N, 0.0, net->matprod[i], N);
 
-        // Apply the activation function (sigmoid) to each element of net->outputs[i]
+        cblas_dgemm_batch(CblasRowMajor, transA, transB, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc, group_count, group_size);
+
+        // Apply the activation function to each element of net->outputs[i]
         // NOTE Don't forget to apply biases (we do it in the same loop)
-        // Also, in the future, it should be faster to move this for loop inside the sigmoid function.
-        // This way, we will be performing only 1 function call (vs M currently)
-        if (activation == 1) {
-            if (i == net->numLayers - 2) {
-                for (int j = 0; j < M; j++) {
-                    net->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                }
-            } else {
-                for (int j = 0; j < M; j++) {
-                    net ->outputs[i][j] = relu(net->matprod[i][j] + net->biases[i][j]);
-                }
-            }
-        }
-
-        if (activation == 2) {
-            if (i == net->numLayers - 2) {
-                softmax(net->matprod[i], net->outputs[i], M);
-            } else {
-                for (int j = 0; j < M; j++) {
-                    net ->outputs[i][j] = sigmoid(net->matprod[i][j] + net->biases[i][j]);
-                }
-            }
-        }
+        feeding(net, activation, i, m[0]);
 
         // NOTE Set input for the next layer i+1
         layerInput = net->outputs[i];
@@ -474,17 +548,6 @@ double testMLP(MLP *net, int numTestImages, int activation) {
         if (predictedLabel == testLabels[i]) {
             correctPredictions++;
         }
-        /*
-        // Printing the vector of prediction for each image
-        printf("Prediction for image %d: [", i);
-        for (int j = 0; j < 10; j++) {
-            if (j != 9) {
-                printf("%f, ", output[j]);
-            }
-            if (j == 9) {
-                printf("%f] - Real Label: %d\n", output[j], testLabels[i]); 
-            }
-        }*/
 
     }
     // Calculation of accuracy
@@ -504,7 +567,29 @@ double testMLP(MLP *net, int numTestImages, int activation) {
 /*                                       */
 /*****************************************/
 
+/**
+ * Perform batch training on a Multilayer Perceptron (MLP) network.
+ * 
+ * This function accumulates gradients for weights and biases over a batch of input-output pairs,
+ * then applies average gradients and updates weights with L2 regularization.
+ * 
+ * @param net Pointer to the MLP network.
+ * @param inputs Array of input data for the batch.
+ * @param targets Array of target output data for the batch.
+ * @param batchSize Size of the batch.
+ * @param lambda Regularization parameter for L2 regularization.
+ * @param activation activation function combination to be applied.
+ */
 void batching(MLP *net, double **inputs, double **targets, int batchSize, double lambda, int activation) {
+    const MKL_INT group_count = 1;
+    MKL_INT m[1], n[1], k[1];
+    MKL_INT lda[1], ldb[1], ldc[1];
+    CBLAS_TRANSPOSE transA[1], transB[1];
+    double alpha[1], beta[1];
+    const double *a[1], *ba[1];
+    double *c[1];
+    int group_size[1] = {batchSize};
+    
     // Reset gradient accumulators to zero for weights and biases
     for (int i = 0; i < net->numLayers - 1; i++) {
         memset(net->weightGradients[i], 0, net->layerSizes[i + 1] * net->layerSizes[i] * sizeof(double));
@@ -512,16 +597,28 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
     }
 
     // Accumulate gradients for each input in the batch
+    double *prevDelta = calloc(net->layerSizes[net->numLayers - 1], sizeof(double));
+    
     for (int b = 0; b < batchSize; b++) {
-        // NOTE We can use the feedforward to compute outputs and derivative outputs because we compute them in here to ease the batching process
-        feedforward(net, inputs[b], targets[b], activation); 
+        feedforward(net, inputs[b], targets[b], activation);
 
-        // NOTE We do a backpropagate & use the errors and accumulate gradients but without updating weights and biases
-        double *prevDelta = calloc(net->layerSizes[net->numLayers - 1], sizeof(double));
         for (int i = net->numLayers - 2; i >= 0; i--) {
             int M = net->layerSizes[i + 1];
             int N = net->layerSizes[i];
             double *delta = calloc(M, sizeof(double));
+            m[0] = net->layerSizes[i + 1];
+            n[0] = net->layerSizes[i];
+            k[0] = 1;
+            lda[0] = m[0];
+            ldb[0] = n[0];
+            ldc[0] = n[0];
+            transA[0] = CblasTrans;
+            transB[0] = CblasNoTrans;
+            alpha[0] = 1.0;
+            beta[0] = 1.0;
+            a[0] = delta;
+            ba[0] = i > 0 ? net->outputs[i - 1] : inputs[b];
+            c[0] = net->weightGradients[i];
 
             // Compute delta for current layer
             if (i == net->numLayers - 2) { // Output layer
@@ -537,34 +634,40 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
                     delta[j] = sum * net->dOutputs[i][j];
                 }
             }
-
-            // Accumulate gradients for weights and biases
+            // Accumulate gradients for biases
             for (int j = 0; j < M; j++) {
-                net->biasGradients[i][j] += delta[j]; // NOTE  We accumulate bias gradient this way
-                for (int k = 0; k < N; k++) {
-                    net->weightGradients[i][j * N + k] += delta[j] * (i > 0 ? net->outputs[i - 1][k] : inputs[b][k]); // NOTE This way is a bit complicated but is more efficent for weight gradient
-                }
+                net->biasGradients[i][j] += delta[j];
             }
+            // Use cblas dgemm to accumulate weight gradients
+            cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, M, N, 1, 1.0, 
+                        delta, M, i > 0 ? net->outputs[i - 1] : inputs[b], N, 1.0, 
+                        net->weightGradients[i], N);
 
-            if (i < net->numLayers - 2) free(prevDelta);
+            free(prevDelta);
             prevDelta = delta;
         }
         free(prevDelta);
+        prevDelta = NULL;
     }
-
-    // NOTE We use average gradients to apply updates with L2 regularization
+    
+    // Apply average gradients and update weights with L2 regularization
     for (int i = 0; i < net->numLayers - 1; i++) {
         int M = net->layerSizes[i + 1];
         int N = net->layerSizes[i];
+        double scale = -net->learningRate / batchSize;
+        
+        // Update biases using MKL daxpy
+        cblas_daxpy(M, scale, net->biasGradients[i], 1, net->biases[i], 1);
+
         for (int j = 0; j < M; j++) {
-            net->biases[i][j] -= net->learningRate * net->biasGradients[i][j] / batchSize;
-            for (int k = 0; k < N; k++) {
-                double weightGradientAvg = net->weightGradients[i][j * N + k] / batchSize;
-                net->weights[i][j * N + k] -= net->learningRate * (weightGradientAvg + lambda * net->weights[i][j * N + k]);
-            }
+            // Apply L2 regularization using MKL dscal
+            cblas_dscal(N, 1.0 - net->learningRate * lambda, &net->weights[i][j * N], 1);
+            // Update weights using MKL daxpy
+            cblas_daxpy(N, scale, &net->weightGradients[i][j * N], 1, &net->weights[i][j * N], 1);
         }
     }
 }
+
 
 /**
  * Train the MLP network using mini-batch gradient descent.
@@ -650,6 +753,8 @@ void free_mlp(MLP *net) {
             free(net->dOutputs[i]);
             free(net->matprod[i]);
             free(net->inputAdjoints[i]);
+            free(net->weightGradients[i]);
+            free(net->biasGradients[i]);
         }
 
         free(net->weights);
@@ -659,6 +764,8 @@ void free_mlp(MLP *net) {
         free(net->inputAdjoints);
         free(net->matprod);
         free(net->layerSizes);
+        free(net->weightGradients);
+        free(net->biasGradients);
         free(net);
     }
 }

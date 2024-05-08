@@ -1,5 +1,11 @@
 #pragma once
 
+/**************************************/
+/*                                    */
+/*   Benchmarking header & struct     */
+/*                                    */
+/**************************************/
+
 typedef struct {
     char* routine; 
     char* topology; 
