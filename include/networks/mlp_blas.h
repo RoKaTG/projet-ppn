@@ -51,6 +51,7 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate);
 /*                                    */
 /**************************************/
 
+//void feeding(MLP *net, int activation, int i, int M);
 double squaredNorm(double *x, int n);
 int feedforward(MLP *net, double *input, double *target, int activation);
 
