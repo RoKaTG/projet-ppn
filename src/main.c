@@ -1,5 +1,4 @@
 #include <cblas.h>
-#include <clapack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -31,7 +30,7 @@ int main(int argc, char *argv[]) {
         printf("batch:true   ___|          |         |              |__=< 60000               |___only when routine:true\n");
         printf("classic:false              |         |                                                  \n");
         printf("                           |         |                                                  \n");
-        printf("Separate layers by ','_____|         |___ relu || sigmoid || soft                       \n");
+        printf("Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || leaky || tanh || swish                     \n");
             
         return 1;
     }
@@ -44,7 +43,7 @@ int main(int argc, char *argv[]) {
             printf("batch:true   ___|          |         |              |__=< 60000               |___ =< 64\n");
             printf("classic:false              |         |                                                  \n");
             printf("                           |         |                                                  \n");
-            printf("Separate layers by ','_____|         |___ relu || sigmoid || soft                       \n");
+            printf("Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || leaky || tanh || swish                  \n");
             
             return 1;
         }
@@ -58,7 +57,7 @@ int main(int argc, char *argv[]) {
             printf("batch:true   ___|          |         |              |__=< 60000         \n");
             printf("classic:false              |         |                                  \n");
             printf("                           |         |                                  \n");
-            printf("Separate layers by ','_____|         |___ relu || sigmoid || tanh       \n");
+            printf("Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || leaky || tanh || swish     \n");
             
             return 1;
         }
@@ -89,17 +88,20 @@ int main(int argc, char *argv[]) {
 
     char *func = argv[3];
 
-    if (strcmp(func, "relu") != 0 && strcmp(func, "sigmoid") != 0 && strcmp(func, "tanh") != 0) {
-        printf("Error: The activation function must be either relu OR sigmoid OR tanh.\n");
+    if (strcmp(func, "relu") != 0 && strcmp(func, "sigmoid") != 0 && strcmp(func, "tanh") != 0 && strcmp(func, "leaky") != 0 && strcmp(func, "fast_sigmoid") != 0 && strcmp(func, "swish") != 0 ) {
+        printf("Error: The activation function must be either relu OR sigmoid OR tanh OR leaky (leakyRelu) OR swish OR fast_sigmoid.\n");
         
         return 1;    
     }
-
-    int activation;
-
-    if (strcmp(func, "relu") == 0) activation = 1;
-    if (strcmp(func, "sigmoid") == 0) activation = 2;
-    if (strcmp(func, "tanh") == 0) activation = 3;
+                                                                // 1 -> relu + sigmoid
+    int activation;                                             // 2 -> sigmoid + softmax
+                                                                // 3 -> fast_sigmoid + softmax
+    if (strcmp(func, "relu") == 0) activation = 1;              // 4 -> leaky_reLu + sigmoid
+    if (strcmp(func, "sigmoid") == 0) activation = 2;           // 5 -> than + sigmoid
+    if (strcmp(func, "fast_sigmoid") == 0) activation = 3;      // 6 -> swish + sigmoid
+    if (strcmp(func, "leaky") == 0) activation = 4;
+    if (strcmp(func, "tanh") == 0) activation = 5;
+    if (strcmp(func, "swish") == 0) activation = 6;
 
     int numTrainingImages = atoi(argv[4]);
 
@@ -192,6 +194,8 @@ int main(int argc, char *argv[]) {
     printBenchmarkResult(&result);
 
     free_mlp(net);
+    free(topologyStr);
+    free(layerSizes);
 
     return 0;
 }
