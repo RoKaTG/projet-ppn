@@ -11,7 +11,7 @@ Make sure you have the following installed on your system before getting started
 ## Installation
 
 1. Clone the repository: `git clone [REPO_URL]`
-2. Navigate to the project directory: `cd projet-ppn
+2. Navigate to the project directory: `cd projet-ppn`
 3. If you can't clone it just download a copy and extract it.
 
 ## Data Preparation
