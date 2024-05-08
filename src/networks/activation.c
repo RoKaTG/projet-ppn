@@ -162,6 +162,24 @@ double leakyReLUPrime(double x, double alpha) {
 
 /**************************************/
 /*                                    */
+/*          Swish's Function          */
+/*                                    */
+/**************************************/
+
+/**
+ * Swish activation function.
+ * Computes the Swish activation of a given double-precision floating-point number.
+ * Swish is defined as f(x) = x / (1 + e^{-x}).
+ *
+ * @param x The input value.
+ * @return The Swish activation of x.
+ */
+double swish(double x) {
+    return x / (1.0 + exp(-x));
+}
+
+/**************************************/
+/*                                    */
 /*          tanh's Function           */
 /*                                    */
 /**************************************/
