@@ -238,7 +238,18 @@ int feedforward(MLP *net, double *input, double *expected, int activation) {
  * @param n  The number of elements in the vector.
  */
 void squaredNormPrime(double *x, double *dx, int n) {
-    for(int i=0; i<n; i++) {
+    int i = 0;
+    __m256d factor = _mm256_set1_pd(2.0);  // Set factor of 2 for all elements of the vector
+
+    // Process in chunks of 4
+    for (i = 0; i <= n - 4; i += 4) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);  // Load 4 elements from x
+        __m256d result_vec = _mm256_mul_pd(x_vec, factor);  // Multiply each element by 2
+        _mm256_storeu_pd(&dx[i], result_vec);  // Store the results back to dx
+    }
+
+    // Handle remaining elements
+    for (; i < n; i++) {
         dx[i] = 2 * x[i];
     }
 }
