@@ -84,15 +84,6 @@ double fast_sigmoidPrime(double x) {
  * @param probabilities The output probabilities array.
  * @param length The length of the logits and probabilities arrays.
  */
-/**
- * Apply the softmax function to the logits to compute probabilities.
- * Softmax function normalizes the logits and converts them into probabilities.
- * This prevents numerical stability issues.
- *
- * @param logits The input logits array.
- * @param probabilities The output probabilities array.
- * @param length The length of the logits and probabilities arrays.
- */
 void softmax(double *logits, double *probabilities, int length) {
     double max_logit = -INFINITY; // Search for the maximum logit
     for (int i = 0; i < length; i++) {
@@ -137,6 +128,24 @@ double relu(double x) {
  */
 double reluPrime(double x) {
     return (x > 0) ? 1 : 0;
+}
+
+/**************************************/
+/*                                    */
+/*       LeakyreLu's Function         */
+/*                                    */
+/**************************************/
+
+/**
+ * Leaky ReLU activation function.
+ * Applies the Leaky ReLU activation to a double-precision floating-point number.
+ *
+ * @param x The input value.
+ * @param alpha The leakage factor for negative inputs.
+ * @return The Leaky ReLU activation of x.
+ */
+double leakyReLU(double x, double alpha) {
+    return x > 0 ? x : alpha * x;
 }
 
 /**************************************/
