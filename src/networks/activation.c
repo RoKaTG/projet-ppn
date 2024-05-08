@@ -316,3 +316,46 @@ void leakyReLUPrime_avx2(double *x, double *output, int length, double alpha) {
         _mm256_storeu_pd(&output[i], result);
     }
 }
+
+/******************************fastSigmoid******************************/
+
+/**
+ * Fast sigmoid function using AVX2 intrinsics with double precision.
+ * This function applies the fast sigmoid to each element of the input array x,
+ * and stores the result in the output array.
+ * The arrays should be allocated with a size that is a multiple of 4.
+ *
+ * @param x Pointer to the input array (double precision).
+ * @param output Pointer to the output array where results are stored.
+ * @param length The number of elements in the input and output arrays.
+ */
+void fast_sigmoid_avx2(double *x, double *output, int length) {
+    __m256d one = _mm256_set1_pd(1.0);
+    for (int i = 0; i < length; i += 4) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);
+        __m256d abs_x = _mm256_andnot_pd(_mm256_set1_pd(-0.0), x_vec); // Absolute value of x
+        __m256d result = _mm256_div_pd(x_vec, _mm256_add_pd(one, abs_x));
+        _mm256_storeu_pd(&output[i], result);
+    }
+}
+
+/**
+ * Derivative of the fast sigmoid function using AVX2 intrinsics with double precision.
+ * This function computes the derivative of the fast sigmoid for each element of the input array x,
+ * and stores the result in the output array.
+ * The arrays should be allocated with a size that is a multiple of 4.
+ *
+ * @param x Pointer to the input array (double precision).
+ * @param output Pointer to the output array where results are stored.
+ * @param length The number of elements in the input and output arrays.
+ */
+void fast_sigmoidPrime_avx2(double *x, double *output, int length) {
+    __m256d one = _mm256_set1_pd(1.0);
+    for (int i = 0; i < length; i += 4) {
+        __m256d x_vec = _mm256_loadu_pd(&x[i]);
+        __m256d abs_x = _mm256_andnot_pd(_mm256_set1_pd(-0.0), x_vec); // Absolute value of x
+        __m256d denom = _mm256_mul_pd(_mm256_add_pd(one, abs_x), _mm256_add_pd(one, abs_x));
+        __m256d result = _mm256_div_pd(one, denom);
+        _mm256_storeu_pd(&output[i], result);
+    }
+}
