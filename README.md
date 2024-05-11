@@ -84,24 +84,24 @@ Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || lea
 3. If you are not on the cluster, a Docker container setup is provided in the docker/ directory for a compatible environment (Not tested yet !).
 4. If you are using the cluster, you need to follow those steps : 
     1. Create a build directory and navigate into it:
-```bash
-mkdir build && cd build/
-```
+    ```bash
+    mkdir build && cd build/
+    ```
 
     2. Configure the node with module load:
-```bash
-module load compiler/latest && module load mkl/latest
-```
+    ```bash
+    module load compiler/latest && module load mkl/latest
+    ```
 
     3. Configure the project with CMake:
-```bash
-cmake ..
-```
+    ```bash
+    cmake ..
+    ```
 
     4. Compile the project:
-```bash
-make
-```
+    ```bash
+    make
+    ```
 
 Fun stat : 
 ```bash
