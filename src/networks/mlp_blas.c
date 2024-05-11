@@ -39,6 +39,7 @@ MLP* create_mlp(int numLayers, int *layerSizes, double learningRate) {
 
     net->numLayers = numLayers;
     net->learningRate = learningRate;
+    net->learningRateBatch = learningRate * 10;
 
     // Allocate memory for layer sizes
     net->layerSizes = (int *)aligned_alloc(ALIGNMENT, numLayers * sizeof(int));
@@ -654,14 +655,14 @@ void batching(MLP *net, double **inputs, double **targets, int batchSize, double
     for (int i = 0; i < net->numLayers - 1; i++) {
         int M = net->layerSizes[i + 1];
         int N = net->layerSizes[i];
-        double scale = -net->learningRate / batchSize;
+        double scale = -net->learningRateBatch / batchSize;
         
         // Update biases using MKL daxpy
         cblas_daxpy(M, scale, net->biasGradients[i], 1, net->biases[i], 1);
 
         for (int j = 0; j < M; j++) {
             // Apply L2 regularization using MKL dscal
-            cblas_dscal(N, 1.0 - net->learningRate * lambda, &net->weights[i][j * N], 1);
+            cblas_dscal(N, 1.0 - net->learningRateBatch * lambda, &net->weights[i][j * N], 1);
             // Update weights using MKL daxpy
             cblas_daxpy(N, scale, &net->weightGradients[i][j * N], 1, &net->weights[i][j * N], 1);
         }

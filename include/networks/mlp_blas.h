@@ -31,6 +31,7 @@ typedef struct {
     double dDeltas[10];
 
     double learningRate;
+    double learningRateBatch;
 
     // NOTE We need gradient accumulators for batch processing
     double **weightGradients;  // Accumulators for weight gradients
