@@ -16,6 +16,9 @@ Make sure you have the following installed on your system before getting started
 
 ## Data Preparation
 
+```diff
+- It looks like the site is down, I pushed the dataset directly so you can skip this part
+```
 1. Run the command line : 
 ```bash
 chmod +x script/get-mnist.sh
@@ -79,6 +82,26 @@ Separate layers by ','_____|         |___ relu || sigmoid || fast_sigmoid || lea
 1. This project is configured to compile and run using Intel's icx compiler due to dependencies on specific features like dgemm_batch from MKL, which are not supported by GCC.
 2. For optimal performance, it is recommended to run this on the fob1 cluster, specifically on a hsw0X node.
 3. If you are not on the cluster, a Docker container setup is provided in the docker/ directory for a compatible environment (Not tested yet !).
+4. If you are using the cluster, you need to follow those steps : 
+    1. Create a build directory and navigate into it:
+```bash
+mkdir build && cd build/
+```
+
+    2. Configure the node with module load:
+```bash
+module load compiler/latest && module load mkl/latest
+```
+
+    3. Configure the project with CMake:
+```bash
+cmake ..
+```
+
+    4. Compile the project:
+```bash
+make
+```
 
 Fun stat : 
 ```bash
