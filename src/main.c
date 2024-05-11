@@ -161,7 +161,6 @@ int main(int argc, char *argv[]) {
     // Testing the network after the training session (same methodology)
 	float res = testMLP(net, numTestImages, activation);
     //Printing the MLP's accuracy & time execution
-    printf("Time execution: %lfs\n", exec_t);
 //    printf("Accuracy: %.2f%% | Loss: %.2f%%\n", res, 100 - res);
 
     char* topologyStr = malloc(1024 * sizeof(char));
@@ -193,7 +192,6 @@ int main(int argc, char *argv[]) {
 
     printBenchmarkResult(&result);
 
-    printf("Accuracy: %.2f%\n", res);
     free_mlp(net);
     free(topologyStr);
     free(layerSizes);
