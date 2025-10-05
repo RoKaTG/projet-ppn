@@ -110,9 +110,5 @@ git ls-files | while read f; do git blame -w -M -C -C --line-porcelain "$f" | gr
 
 Project made by : 
 
-MSILINI Yassine (RKG = RoKATG),
-
-ARHAB Sofiane (dxhardys),
-
-CHABANE Khaled (CHA-Khaled).
+MSILINI Yassine (RKG = RoKATG)
 
